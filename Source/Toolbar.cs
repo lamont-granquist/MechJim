@@ -29,7 +29,7 @@ namespace MechJim
     public void AddButton() {
       if (btnLauncher == null) {
         btnLauncher = ApplicationLauncher.Instance.AddModApplication(
-            ButtonPressed, ButtonReleased,
+            ButtonTrue, ButtonFalse,
             null, null, null, null,
             ApplicationLauncher.AppScenes.FLIGHT,
             GameDatabase.Instance.GetTexture("MechJim/Icons/ToolbarIcon", false)
@@ -41,19 +41,20 @@ namespace MechJim
       ApplicationLauncher.Instance.RemoveModApplication(btnLauncher);
     }
 
-    private void ButtonPressed() {
+    private void ButtonTrue() {
       MechJimCore.spawnWindow();
     }
 
-    private void ButtonReleased() {
+    private void ButtonFalse() {
       MechJimCore.dismissWindow();
     }
 
-    public static void setBtnState(bool state, bool click = false) {
-      if (state)
-        btnLauncher.SetTrue(click);
-      else
-        btnLauncher.SetFalse(click);
+    public static void SetFalse() {
+      btnLauncher.SetFalse(false);
+    }
+
+    public static void SetTrue() {
+      btnLauncher.SetTrue(false);
     }
   }
 }

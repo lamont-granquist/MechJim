@@ -47,7 +47,22 @@ namespace MechJim {
     }
 
     public static void spawnWindow() {
-      window = PopupDialog.SpawnPopupDialog(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), "Title", "Text", "OK", false, HighLogic.UISkin);
+      window = PopupDialog.SpawnPopupDialog(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new MultiOptionDialog(
+            "foo",
+            "bar",
+            UISkinManager.defaultSkin,
+            new Rect(0.5f, 0.5f, 250, 120),
+            new DialogGUIBase[] {
+              new DialogGUIButton("Place", Doit, true),
+              new DialogGUIButton("Dismiss", Toolbar.SetFalse, true)
+            }
+            ),
+          false, UISkinManager.defaultSkin, false, "");
+    }
+
+    public static void Doit() {
+      var maneuver = new Maneuver.Circularize(FlightGlobals.ActiveVessel, FlightGlobals.ActiveVessel.orbit, Planetarium.GetUniversalTime());
+      maneuver.PlaceManeuverNode();
     }
 
     public static void dismissWindow() {
