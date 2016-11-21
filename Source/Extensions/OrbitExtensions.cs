@@ -1,3 +1,5 @@
+using System;
+
 namespace MechJim.Extensions {
   public static class OrbitExtensions {
     // orbital velocity
@@ -48,6 +50,12 @@ namespace MechJim.Extensions {
       return Vector3d.Exclude(o.Up(UT), o.Prograde(UT)).normalized;
     }
 
+    // magnitude of the velocity in the horizontal direction
+    public static double HorizontalVelocity(this Orbit o, double UT)
+    {
+      return Vector3d.Dot(o.SwappedOrbitalVelocityAtUT(UT), o.Horizontal(UT));
+    }
+
     // normalized direction pointing north projected parallel to the surface
     public static Vector3d North(this Orbit o, double UT)
     {
@@ -63,6 +71,11 @@ namespace MechJim.Extensions {
     // distance from the center of the primary
     public static double Radius(this Orbit o, double UT) {
       return o.SwappedRelativePositionAtUT(UT).magnitude;
+    }
+
+    // escape velocity
+    public static double EscapeVelocity(this Orbit o, double UT) {
+      return Math.Sqrt(2 * o.referenceBody.gravParameter / o.Radius(UT));
     }
 
     public static Vector3d DeltaVToManeuverNodeCoordinates(this Orbit o, double UT, Vector3d dV) {

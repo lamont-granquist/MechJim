@@ -6,18 +6,11 @@ namespace MechJim
 
   public class Toolbar
   {
-    private static ApplicationLauncherButton btnLauncher;
+    private ApplicationLauncherButton btnLauncher;
+    private MechJimCore core;
 
-    /* singleton */
-    private static readonly Toolbar instance = new Toolbar();
-    static Toolbar() {
-    }
-    private Toolbar() {
-    }
-    public static Toolbar Instance {
-      get {
-        return instance;
-      }
+    public Toolbar(MechJimCore core) {
+      this.core = core;
     }
 
     /* entering scene */
@@ -31,7 +24,7 @@ namespace MechJim
         btnLauncher = ApplicationLauncher.Instance.AddModApplication(
             ButtonTrue, ButtonFalse,
             null, null, null, null,
-            ApplicationLauncher.AppScenes.FLIGHT,
+            ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW,
             GameDatabase.Instance.GetTexture("MechJim/Icons/ToolbarIcon", false)
             );
       }
@@ -42,18 +35,18 @@ namespace MechJim
     }
 
     private void ButtonTrue() {
-      MechJimCore.spawnWindow();
+      core.window.SpawnWindow();
     }
 
     private void ButtonFalse() {
-      MechJimCore.dismissWindow();
+      core.window.DismissWindow();
     }
 
-    public static void SetFalse() {
+    public void SetFalse() {
       btnLauncher.SetFalse(false);
     }
 
-    public static void SetTrue() {
+    public void SetTrue() {
       btnLauncher.SetTrue(false);
     }
   }

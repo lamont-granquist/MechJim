@@ -5,7 +5,8 @@ using UnityEngine;
 namespace MechJim {
   [KSPAddon(KSPAddon.Startup.Flight, false)]
   public class MechJimCore : MonoBehaviour {
-    private static PopupDialog window;
+    public Window window;
+    public Toolbar toolbar;
 
     /* constructor - use awake/start for initialization */
     public MechJimCore() {
@@ -13,13 +14,14 @@ namespace MechJim {
 
     /* entering scene */
     void Awake() {
-      Toolbar.Instance.Awake();
+      window = new Window(this);
+      toolbar = new Toolbar(this);
+      toolbar.Awake();
     }
 
     /* starting */
     void Start() {
-      GameEvents.onGamePause.Add(onPause);
-      GameEvents.onGameUnpause.Add(onUnpause);
+      window.Start();
     }
 
     /* every frame */
@@ -32,42 +34,7 @@ namespace MechJim {
 
     /* leaving scene */
     void OnDestroy() {
-      GameEvents.onGamePause.Remove(onPause);
-      GameEvents.onGameUnpause.Remove(onUnpause);
-    }
-
-    private void onPause() {
-      if (window != null)
-        window.gameObject.SetActive(false);
-    }
-
-    private void onUnpause() {
-      if (window != null)
-        window.gameObject.SetActive(true);
-    }
-
-    public static void spawnWindow() {
-      window = PopupDialog.SpawnPopupDialog(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new MultiOptionDialog(
-            "foo",
-            "bar",
-            UISkinManager.defaultSkin,
-            new Rect(0.5f, 0.5f, 250, 120),
-            new DialogGUIBase[] {
-              new DialogGUIButton("Place", Doit, true),
-              new DialogGUIButton("Dismiss", Toolbar.SetFalse, true)
-            }
-            ),
-          false, UISkinManager.defaultSkin, false, "");
-    }
-
-    public static void Doit() {
-      var maneuver = new Maneuver.Circularize(FlightGlobals.ActiveVessel, FlightGlobals.ActiveVessel.orbit, Planetarium.GetUniversalTime());
-      maneuver.PlaceManeuverNode();
-    }
-
-    public static void dismissWindow() {
-      if (window != null)
-        window.Dismiss();
+      window.OnDestroy();
     }
   }
 }
