@@ -14,9 +14,9 @@ namespace MechJim {
 
     /* entering scene */
     void Awake() {
+      Toolbar.Instance.core = this;
+      Toolbar.Instance.Awake();
       window = new Window(this);
-      toolbar = new Toolbar(this);
-      toolbar.Awake();
     }
 
     /* starting */

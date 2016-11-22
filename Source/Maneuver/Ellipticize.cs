@@ -5,16 +5,16 @@ using MechJim.Extensions;
 namespace MechJim.Maneuver {
   public class Ellipticize : ManeuverBase {
 
-    public Ellipticize(Vessel vessel, Orbit o, double UT, double PeR, double ApR): base(vessel, o, UT) {
-      this.PeR    = PeR;
-      this.ApR    = ApR;
+    public Ellipticize(Vessel vessel, Orbit o, double UT, double PeA, double ApA): base(vessel, o, UT) {
+      this.PeA    = PeA;
+      this.ApA    = ApA;
     }
 
-    public double PeR { get; set; }
-    public double ApR { get; set; }
+    public double PeA { get; set; }
+    public double ApA { get; set; }
 
     public override Vector3d DeltaV() {
-      return o.DeltaVToEllipticize(UT, PeR, ApR);
+      return o.DeltaVToEllipticize(UT, PeA + o.referenceBody.Radius, ApA + o.referenceBody.Radius);
     }
   }
 }

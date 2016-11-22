@@ -1,0 +1,8 @@
+Lambert Solvers:
+
+- Gauss Method
+- Thorne's Solution
+- Battin's Solution
+- Universal Variables (http://ccar.colorado.edu/asen5050/projects/projects_2013/Sullivan_Jake/methods.html)
+- Battin-Vaughan
+- Avanzini's Method

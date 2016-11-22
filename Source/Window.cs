@@ -8,8 +8,10 @@ namespace MechJim {
     private PopupDialog window;
     private MechJimCore core;
 
-    private double PeR;
-    private double ApR;
+    private double ellip_PeA;
+    private double ellip_ApA;
+    private double periap_PeA;
+    private double apoap_ApA;
 
     public Window(MechJimCore core) {
       this.core = core;
@@ -41,10 +43,22 @@ namespace MechJim {
       List<DialogGUIBase> dialog = new List<DialogGUIBase>();
 
       dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
-              new DialogGUITextInput("ApR", false, 10, s => { ApR = Convert.ToDouble(s); return Convert.ToString(ApR); }),
-              new DialogGUITextInput("PeR", false, 10, s => { PeR = Convert.ToDouble(s); return Convert.ToString(PeR); }),
+              new DialogGUITextInput("ApA", false, 10, s => { apoap_ApA = Convert.ToDouble(s); return Convert.ToString(apoap_ApA); }),
+              new DialogGUIButton("Apoapsis", Apoapsis),
+            }));
+      dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+              new DialogGUITextInput("PeA", false, 10, s => { periap_PeA = Convert.ToDouble(s); return Convert.ToString(periap_PeA); }),
+              new DialogGUIButton("Periapsis", Periapsis),
+            }));
+      dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+              new DialogGUITextInput("ApA", false, 10, s => { ellip_ApA = Convert.ToDouble(s); return Convert.ToString(ellip_ApA); }),
+              new DialogGUITextInput("PeA", false, 10, s => { ellip_PeA = Convert.ToDouble(s); return Convert.ToString(ellip_PeA); }),
               new DialogGUIButton("Ellipticize", Ellipticize),
             }));
+      dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+              new DialogGUIButton("Circularize", Circularize),
+            }));
+
       dialog.Add(new DialogGUIButton("Dismiss", core.toolbar.SetFalse, true));
 
       window = PopupDialog.SpawnPopupDialog(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
@@ -58,7 +72,17 @@ namespace MechJim {
     }
 
     void Ellipticize() {
-      var maneuver = new Maneuver.Ellipticize(FlightGlobals.ActiveVessel, FlightGlobals.ActiveVessel.orbit, Planetarium.GetUniversalTime(), PeR, ApR);
+      var maneuver = new Maneuver.Ellipticize(FlightGlobals.ActiveVessel, FlightGlobals.ActiveVessel.orbit, Planetarium.GetUniversalTime(), ellip_PeA, ellip_ApA);
+      maneuver.PlaceManeuverNode();
+    }
+
+    void Periapsis() {
+      var maneuver = new Maneuver.Periapsis(FlightGlobals.ActiveVessel, FlightGlobals.ActiveVessel.orbit, Planetarium.GetUniversalTime(), periap_PeA);
+      maneuver.PlaceManeuverNode();
+    }
+
+    void Apoapsis() {
+      var maneuver = new Maneuver.Apoapsis(FlightGlobals.ActiveVessel, FlightGlobals.ActiveVessel.orbit, Planetarium.GetUniversalTime(), apoap_ApA);
       maneuver.PlaceManeuverNode();
     }
 

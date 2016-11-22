@@ -7,10 +7,18 @@ namespace MechJim
   public class Toolbar
   {
     private ApplicationLauncherButton btnLauncher;
-    private MechJimCore core;
+    public MechJimCore core { get; set; }
 
-    public Toolbar(MechJimCore core) {
-      this.core = core;
+    /* singleton */
+    private static readonly Toolbar instance = new Toolbar();
+    static Toolbar() {
+    }
+    private Toolbar() {
+    }
+    public static Toolbar Instance {
+      get {
+        return instance;
+      }
     }
 
     /* entering scene */
