@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using UnityEngine;
+using MechJim.Manager;
 
 namespace MechJim {
     [KSPAddon(KSPAddon.Startup.Flight, false)]
@@ -8,7 +9,12 @@ namespace MechJim {
             public Window window;
             public Toolbar toolbar;
             public Vessel vessel;
-            public SteeringManager steeringManager;
+            public SteeringManager steering;
+            public AttitudeManager attitude;
+            public ThrottleManager throttle;
+            public WarpManager warp;
+            public NodeExecutor node;
+            public VesselState vesselState;
 
             /* constructor - prefer using awake()/start() */
             public Core() {
@@ -20,7 +26,12 @@ namespace MechJim {
                 toolbar.core = this;
                 toolbar.Awake();
                 window = new Window(this);
-                steeringManager = new SteeringManager(this);
+                steering = new SteeringManager(this);
+                attitude = new AttitudeManager(this);
+                throttle = new ThrottleManager(this);
+                warp = new WarpManager(this);
+                node = new NodeExecutor(this);
+                vesselState = new VesselState(this);
             }
 
             /* starting */
@@ -35,19 +46,34 @@ namespace MechJim {
             /* every physics step */
             void FixedUpdate() {
                 vessel = FlightGlobals.ActiveVessel;
-                vessel.OnFlyByWire -= OnFlyByWire;
-                vessel.OnFlyByWire += OnFlyByWire;
+                vessel.OnFlyByWire -= Drive;
+                vessel.OnFlyByWire += Drive;
+
+                vesselState.FixedUpdate();
+
+                node.FixedUpdate();
+            }
+
+            public void ProgradeToggle() {
+                if (attitude.enabled) {
+                    attitude.enabled = false;
+                } else {
+                    attitude.attitudeTo(Vector3d.forward, AttitudeReference.ORBIT);
+                }
             }
 
             /* leaving scene */
             void OnDestroy() {
-                FlightGlobals.ActiveVessel.OnFlyByWire -= OnFlyByWire;
+                FlightGlobals.ActiveVessel.OnFlyByWire -= Drive;
                 window.OnDestroy();
             }
 
             /* FlyByWire callback */
-            private void OnFlyByWire(FlightCtrlState s) {
-                steeringManager.OnFlyByWire(s);
+            private void Drive(FlightCtrlState s) {
+                vessel = FlightGlobals.ActiveVessel;
+                throttle.Drive(s);
+                attitude.Drive(s); /* before steering */
+                steering.Drive(s);
                 CheckFlightCtrlState(s);
             }
 

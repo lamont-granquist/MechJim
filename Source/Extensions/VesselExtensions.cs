@@ -23,5 +23,9 @@ namespace MechJim.Extensions {
             mn.OnGizmoUpdated(nodeDV, UT);
             return mn;
         }
+
+        public static Vector3d forward(this Vessel vessel) {
+            return vessel.GetTransform().up;
+        }
     }
 }

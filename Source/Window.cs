@@ -44,19 +44,25 @@ namespace MechJim {
 
             dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
                         new DialogGUITextInput("ApA", false, 10, s => { apoap_ApA = Convert.ToDouble(s); return Convert.ToString(apoap_ApA); }),
-                        new DialogGUIButton("Apoapsis", Apoapsis),
+                        new DialogGUIButton("Apoapsis", Apoapsis, false),
                         }));
             dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
                         new DialogGUITextInput("PeA", false, 10, s => { periap_PeA = Convert.ToDouble(s); return Convert.ToString(periap_PeA); }),
-                        new DialogGUIButton("Periapsis", Periapsis),
+                        new DialogGUIButton("Periapsis", Periapsis, false),
                         }));
             dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
                         new DialogGUITextInput("ApA", false, 10, s => { ellip_ApA = Convert.ToDouble(s); return Convert.ToString(ellip_ApA); }),
                         new DialogGUITextInput("PeA", false, 10, s => { ellip_PeA = Convert.ToDouble(s); return Convert.ToString(ellip_PeA); }),
-                        new DialogGUIButton("Ellipticize", Ellipticize),
+                        new DialogGUIButton("Ellipticize", Ellipticize, false),
                         }));
             dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
-                        new DialogGUIButton("Circularize", Circularize),
+                        new DialogGUIButton("Circularize", Circularize, false),
+                        }));
+            dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+                        new DialogGUIButton("Prograde", ProgradeToggle, false),
+                        }));
+            dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+                        new DialogGUIButton("NodeExecute", NodeExecute, false),
                         }));
 
             dialog.Add(new DialogGUIButton("Dismiss", core.toolbar.SetFalse, true));
@@ -64,6 +70,14 @@ namespace MechJim {
             window = PopupDialog.SpawnPopupDialog(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                     new MultiOptionDialog("foo", "bar", UISkinManager.defaultSkin, new Rect(0.5f, 0.5f, 250, 120), dialog.ToArray()),
                     false, UISkinManager.defaultSkin, false, "");
+        }
+
+        void NodeExecute() {
+            core.node.enabled = true;
+        }
+
+        void ProgradeToggle() {
+            core.ProgradeToggle();
         }
 
         void Circularize() {
