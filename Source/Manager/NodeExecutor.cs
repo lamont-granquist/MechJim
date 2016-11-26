@@ -13,6 +13,7 @@ namespace MechJim.Manager {
         }
 
         public override void OnDisable() {
+            core.throttle.target = 0.0;
             core.attitude.enabled = false;
         }
 
@@ -37,7 +38,7 @@ namespace MechJim.Manager {
 
             double BurnUT = node.UT - BurnTime(dVLeft) / 2.0;
 
-            if ( BurnUT > vesselState.time + 300 ) {
+            if ( vesselState.time < ( BurnUT - 300 ) ) {
                 /* way before the burn */
                 if ( core.attitude.AngleFromTarget() < 1 && Math.Abs(vesselState.angularVelocity.x) < 0.001 && Math.Abs(vesselState.angularVelocity.z) < 0.001 )
                     core.warp.WarpToUT(BurnUT - leadTime);
@@ -56,8 +57,9 @@ namespace MechJim.Manager {
                 if ( core.attitude.AngleFromTarget() > 5 ) {
                     seeking = true;
                 } else if ( core.attitude.AngleFromTarget() < 1 || !seeking ) {
+                    double thrustToMass = vesselState.thrustMaximum / vesselState.mass;
+                    core.throttle.target = Utils.Clamp(dVLeft / thrustToMass / 2.0, 0.01, 1.0);
                     seeking = false;
-                    core.throttle.target = 1.0;
                 }
             }
         }
