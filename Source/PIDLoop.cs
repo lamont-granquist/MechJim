@@ -2,7 +2,6 @@ using System;
 
 namespace MechJim {
     public class PIDLoop {
-        public double LastSampleTime { get; set; }
         public double Kp { get; set; }
         public double Ki { get; set; }
         public double Kd { get; set; }
@@ -23,7 +22,6 @@ namespace MechJim {
         public PIDLoop() : this(1, 0, 0) { }
 
         public PIDLoop(double kp, double ki, double kd, double maxoutput = double.MaxValue, double minoutput = double.MinValue, bool extraUnwind = false) {
-            LastSampleTime = double.MaxValue;
             Kp = kp;
             Ki = ki;
             Kd = kd;
@@ -40,89 +38,70 @@ namespace MechJim {
             ExtraUnwind = extraUnwind;
         }
 
-        public double Update(double sampleTime, double input, double setpoint, double minOutput, double maxOutput) {
+        public double Update(double input, double setpoint, double minOutput, double maxOutput) {
             MaxOutput = maxOutput;
             MinOutput = minOutput;
             Setpoint = setpoint;
-            return Update(sampleTime, input);
+            return Update(input);
         }
 
-        public double Update(double sampleTime, double input, double setpoint, double maxOutput) {
-            return Update(sampleTime, input, setpoint, -maxOutput, maxOutput);
+        public double Update(double input, double setpoint, double maxOutput) {
+            return Update(input, setpoint, -maxOutput, maxOutput);
         }
 
-        public double Update(double sampleTime, double input)
+        public double Update(double input)
         {
             double error = Setpoint - input;
             double pTerm = error * Kp;
             double iTerm = 0;
             double dTerm = 0;
-            if (LastSampleTime < sampleTime)
-            {
-                double dt = sampleTime - LastSampleTime;
-                if (Ki != 0)
-                {
-                    if (ExtraUnwind)
-                    {
-                        if (Math.Sign(error) != Math.Sign(ErrorSum))
-                        {
-                            if (!unWinding)
-                            {
-                                Ki *= 2;
-                                unWinding = true;
-                            }
+            double dt = TimeWarp.fixedDeltaTime;
+            if (Ki != 0) {
+                if (ExtraUnwind) {
+                    if (Math.Sign(error) != Math.Sign(ErrorSum)) {
+                        if (!unWinding) {
+                            Ki *= 2;
+                            unWinding = true;
                         }
-                        else if (unWinding)
-                        {
-                            Ki /= 2;
-                            unWinding = false;
-                        }
+                    } else if (unWinding) {
+                        Ki /= 2;
+                        unWinding = false;
                     }
-                    iTerm = ITerm + error * dt * Ki;
                 }
-                ChangeRate = (input - Input) / dt;
-                if (Kd != 0)
-                {
-                    dTerm = -ChangeRate * Kd;
-                }
+                iTerm = ITerm + error * dt * Ki;
             }
-            else
-            {
-                dTerm = DTerm;
-                iTerm = ITerm;
+            ChangeRate = (input - Input) / dt;
+            if (Kd != 0) {
+                dTerm = -ChangeRate * Kd;
             }
             Output = pTerm + iTerm + dTerm;
-            if (Output > MaxOutput)
-            {
+            if (Output > MaxOutput) {
                 Output = MaxOutput;
-                if (Ki != 0 && LastSampleTime < sampleTime)
-                {
+                if (Ki != 0) {
                     iTerm = Output - Math.Min(pTerm + dTerm, MaxOutput);
                 }
             }
-            if (Output < MinOutput)
-            {
+            if (Output < MinOutput) {
                 Output = MinOutput;
-                if (Ki != 0 && LastSampleTime < sampleTime)
-                {
+                if (Ki != 0) {
                     iTerm = Output - Math.Max(pTerm + dTerm, MinOutput);
                 }
             }
-            LastSampleTime = sampleTime;
             Input = input;
             Error = error;
             PTerm = pTerm;
             ITerm = iTerm;
             DTerm = dTerm;
-            if (Ki != 0) ErrorSum = iTerm / Ki;
-            else ErrorSum = 0;
+            if (Ki != 0)
+                ErrorSum = iTerm / Ki;
+            else
+                ErrorSum = 0;
             return Output;
         }
 
         public void ResetI() {
             ErrorSum = 0;
             ITerm = 0;
-            LastSampleTime = double.MaxValue;
         }
     }
 }

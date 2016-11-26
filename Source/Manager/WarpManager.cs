@@ -21,6 +21,7 @@ namespace MechJim.Manager {
         }
 
         private void SetTimeWarpRate(int rateIndex, bool instant) {
+            warpToUT = 0.0;
             if (rateIndex != TimeWarp.CurrentRateIndex) {
                 TimeWarp.fetch.Mode = TimeWarp.Modes.HIGH;
                 TimeWarp.fetch.CancelAutoWarp();

@@ -12,6 +12,10 @@ namespace MechJim.Manager {
             seeking = true;
         }
 
+        public override void OnDisable() {
+            core.attitude.enabled = false;
+        }
+
         public override void OnFixedUpdate() {
             core.throttle.target = 0.0;
 
@@ -25,7 +29,6 @@ namespace MechJim.Manager {
 
             if (dVLeft < tolerance && core.attitude.AngleFromTarget() > 5) {
                 node.RemoveSelf();
-                core.attitude.enabled = false;
                 enabled = false;
                 return;
             }
@@ -34,29 +37,27 @@ namespace MechJim.Manager {
 
             double BurnUT = node.UT - BurnTime(dVLeft) / 2.0;
 
-            if ( BurnUT > vesselState.time ) {
-                /* before the burn */
-                if ( core.attitude.AngleFromTarget() < 1 && Math.Abs(vesselState.angularVelocity.x) < 0.002 && Math.Abs(vesselState.angularVelocity.z) < 0.002 )
+            if ( BurnUT > vesselState.time + 300 ) {
+                /* way before the burn */
+                if ( core.attitude.AngleFromTarget() < 1 && Math.Abs(vesselState.angularVelocity.x) < 0.001 && Math.Abs(vesselState.angularVelocity.z) < 0.001 )
                     core.warp.WarpToUT(BurnUT - leadTime);
-                else
+
+            } else if ( BurnUT > vesselState.time ) {
+                /* before the burn */
+                if ( core.attitude.AngleFromTarget() < 1 && Math.Abs(vesselState.angularVelocity.x) < 0.001 && Math.Abs(vesselState.angularVelocity.z) < 0.001 )
+                    core.warp.WarpToUT(BurnUT - leadTime);
+                if ( core.attitude.AngleFromTarget() > 5 )
                     core.warp.MinimumWarp();
             } else {
                 /* feeling the burn */
                 core.warp.MinimumWarp();
-                if ( seeking ) {
-                    if ( core.attitude.AngleFromTarget() < 1 ) {
-                        seeking = false;
-                        core.throttle.target = 1.0;
-                    } else {
-                        core.throttle.target = 0.0;
-                    }
-                } else {
-                    if ( core.attitude.AngleFromTarget() < 5 ) {
-                        core.throttle.target = 1.0;
-                    } else {
-                        seeking = true;
-                        core.throttle.target = 0.0;
-                    }
+                core.throttle.target = 0.0;
+
+                if ( core.attitude.AngleFromTarget() > 5 ) {
+                    seeking = true;
+                } else if ( core.attitude.AngleFromTarget() < 1 || !seeking ) {
+                    seeking = false;
+                    core.throttle.target = 1.0;
                 }
             }
         }

@@ -73,7 +73,7 @@ namespace MechJim {
         }
 
         void NodeExecute() {
-            core.node.enabled = true;
+            core.node.enabled = !core.node.enabled;
         }
 
         void ProgradeToggle() {

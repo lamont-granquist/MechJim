@@ -102,18 +102,20 @@ namespace MechJim.Manager {
 
             double time = Planetarium.GetUniversalTime();
 
-            TargetOmega[0] = pitchRatePI.Update(time, -Phi[0], 0, MaxOmega[0]);
-            TargetOmega[1] = rollRatePI.Update(time, -Phi[1], 0, MaxOmega[1]);
-            TargetOmega[2] = yawRatePI.Update(time, -Phi[2], 0, MaxOmega[2]);
+            TargetOmega[0] = pitchRatePI.Update(-Phi[0], 0, MaxOmega[0]);
+            TargetOmega[1] = rollRatePI.Update(-Phi[1], 0, MaxOmega[1]);
+            TargetOmega[2] = yawRatePI.Update(-Phi[2], 0, MaxOmega[2]);
 
             if (Math.Abs(PhiTotal) > RollControlRange) {
                 TargetOmega[1] = 0;
                 rollRatePI.ResetI();
             }
 
-            TargetTorque[0] = pitchPI.Update(time, Omega[0], TargetOmega[0], MomentOfInertia[0], ControlTorque[0]);
-            TargetTorque[1] = rollPI.Update(time, Omega[2], TargetOmega[1], MomentOfInertia[1], ControlTorque[1]);
-            TargetTorque[2] = yawPI.Update(time, Omega[1], TargetOmega[2], MomentOfInertia[2], ControlTorque[2]);
+            Debug.Log("time = " + time);
+
+            TargetTorque[0] = pitchPI.Update(Omega[0], TargetOmega[0], MomentOfInertia[0], ControlTorque[0]);
+            TargetTorque[1] = rollPI.Update(Omega[2], TargetOmega[1], MomentOfInertia[1], ControlTorque[1]);
+            TargetTorque[2] = yawPI.Update(Omega[1], TargetOmega[2], MomentOfInertia[2], ControlTorque[2]);
         }
 
         public void Reset() {
@@ -136,9 +138,20 @@ namespace MechJim.Manager {
                 Actuation[i] = Math.Max(Math.Min(Actuation[i], clamp), -clamp);
             }
 
+
             c.pitch = (float)Actuation.x;
             c.roll  = (float)Actuation.y;
             c.yaw   = (float)Actuation.z;
+
+            Debug.Log("target = " + target);
+            Debug.Log("phiTotal = " + PhiTotal);
+            Debug.Log("phi = " + Phi);
+            Debug.Log("omega = " + Omega);
+            Debug.Log("targetOmega = " + TargetOmega);
+            Debug.Log("momentOfInertia = " + MomentOfInertia);
+            Debug.Log("controlTorque = " + ControlTorque);
+            Debug.Log("targetTorque = " + TargetTorque);
+            Debug.Log("actuation = " + Actuation);
         }
 
         public class TorquePI
@@ -175,13 +188,13 @@ namespace MechJim.Manager {
                 TorqueAdjust = new MovingAverage();
             }
 
-            public double Update(double sampleTime, double input, double setpoint, double MomentOfInertia, double maxOutput)
+            public double Update(double input, double setpoint, double MomentOfInertia, double maxOutput)
             {
                 I = MomentOfInertia;
 
                 Loop.Ki = MomentOfInertia * Math.Pow(4.0 / ts, 2);
                 Loop.Kp = 2 * Math.Pow(MomentOfInertia * Loop.Ki, 0.5);
-                return Loop.Update(sampleTime, input, setpoint, maxOutput);
+                return Loop.Update(input, setpoint, maxOutput);
             }
 
             public void ResetI() { Loop.ResetI(); }

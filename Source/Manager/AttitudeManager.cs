@@ -109,7 +109,7 @@ namespace MechJim.Manager {
         }
 
         /*
-         * helper routines
+         * public helper routines
          */
 
         // angle in degrees between the vessel's current pointing direction and the attitude target, ignoring roll
