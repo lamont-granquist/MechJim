@@ -3,7 +3,9 @@ using System;
 namespace MechJim {
     public class PIDLoop {
         public double Kp { get; set; }
-        public double Ki { get; set; }
+        private double _Ki;
+        private double _loopKi;
+        public double Ki { get {return _Ki;} set { _Ki = value; _loopKi = value; } }
         public double Kd { get; set; }
         public double Input { get; set; }
         public double Setpoint { get; set; }
@@ -56,19 +58,19 @@ namespace MechJim {
             double iTerm = 0;
             double dTerm = 0;
             double dt = TimeWarp.fixedDeltaTime;
-            if (Ki != 0) {
+            if (_loopKi != 0) {
                 if (ExtraUnwind) {
                     if (Math.Sign(error) != Math.Sign(ErrorSum)) {
                         if (!unWinding) {
-                            Ki *= 2;
+                            _loopKi *= 2;
                             unWinding = true;
                         }
                     } else if (unWinding) {
-                        Ki /= 2;
+                        _loopKi = _Ki;
                         unWinding = false;
                     }
                 }
-                iTerm = ITerm + error * dt * Ki;
+                iTerm = ITerm + error * dt * _loopKi;
             }
             ChangeRate = (input - Input) / dt;
             if (Kd != 0) {
@@ -77,13 +79,13 @@ namespace MechJim {
             Output = pTerm + iTerm + dTerm;
             if (Output > MaxOutput) {
                 Output = MaxOutput;
-                if (Ki != 0) {
+                if (_loopKi != 0) {
                     iTerm = Output - Math.Min(pTerm + dTerm, MaxOutput);
                 }
             }
             if (Output < MinOutput) {
                 Output = MinOutput;
-                if (Ki != 0) {
+                if (_loopKi != 0) {
                     iTerm = Output - Math.Max(pTerm + dTerm, MinOutput);
                 }
             }
@@ -92,8 +94,8 @@ namespace MechJim {
             PTerm = pTerm;
             ITerm = iTerm;
             DTerm = dTerm;
-            if (Ki != 0)
-                ErrorSum = iTerm / Ki;
+            if (_loopKi != 0)
+                ErrorSum = iTerm / _loopKi;
             else
                 ErrorSum = 0;
             return Output;

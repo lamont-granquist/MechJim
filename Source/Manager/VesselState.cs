@@ -12,13 +12,22 @@ namespace MechJim.Manager {
 
         public Vector3d CoMD { get { return vessel.CoMD; } }
         public Vector3d orbitalVelocity { get { return vessel.obt_velocity; } }
+        public Vector3d surfaceVelocity { get { return vessel.srf_velocity; } }
 
         public Vector3d up { get { return (CoMD - mainBody.position).normalized; } }
         public Vector3d north { get { return vessel.north; } }
         public Vector3d east { get { return vessel.east; } }
         public Vector3d forward { get { return vessel.GetTransform().up; } }
 
-        public Vector3d surfaceVelocity;
+        public Quaternion rotationSurface;
+        public Quaternion rotationVesselSurface;
+
+        public Vector3d velocityMainBodySurface;
+
+
+        public double rocketAoA;
+        /* public double planeAoA;
+        public double planeAoS; */
 
         public Vector3d radialPlus;   //unit vector in the plane of up and velocityVesselOrbit and perpendicular to velocityVesselOrbit
         public Vector3d radialPlusSurface; //unit vector in the plane of up and velocityVesselSurface and perpendicular to velocityVesselSurface
@@ -40,7 +49,10 @@ namespace MechJim.Manager {
         public double totalVe;
 
         public override void OnFixedUpdate() {
-            surfaceVelocity = orbitalVelocity - mainBody.getRFrmVel(CoMD);
+            rotationSurface = Quaternion.LookRotation(north, up);
+            rotationVesselSurface = Quaternion.Inverse(Quaternion.Euler(90, 0, 0) * Quaternion.Inverse(vessel.GetTransform().rotation) * rotationSurface);
+
+            velocityMainBodySurface = rotationSurface * surfaceVelocity;
 
             angularVelocity = Quaternion.Inverse(vessel.GetTransform().rotation) * vessel.rootPart.rb.angularVelocity;
 
@@ -48,6 +60,8 @@ namespace MechJim.Manager {
             radialPlus = Vector3d.Exclude(orbitalVelocity, up).normalized;
             normalPlusSurface = -Vector3d.Cross(radialPlusSurface, surfaceVelocity.normalized);
             normalPlus = -Vector3d.Cross(radialPlus, orbitalVelocity.normalized);
+
+            rocketAoA = Vector3d.Angle(vessel.ReferenceTransform.rotation * Quaternion.Euler(-90, 0, 0) * Vector3d.forward, surfaceVelocity);
 
             atmPressure = vessel.staticPressurekPa * PhysicsGlobals.KpaToAtmospheres;
             altitude1 = altitude + TimeWarp.fixedDeltaTime * vessel.verticalSpeed;

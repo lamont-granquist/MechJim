@@ -13,9 +13,7 @@ namespace MechJim.Manager {
 
         public void WarpToUT(double UT) {
             if (UT != warpToUT) {
-                Debug.Log("called WarpTo( " + UT + ")");
-                // timewarp.WarpTo(UT, timewarp.warpRates.Length);
-                timewarp.WarpTo(UT);
+                timewarp.WarpTo(UT, timewarp.warpRates.Length);
                 warpToUT = UT;
             }
         }
@@ -23,8 +21,8 @@ namespace MechJim.Manager {
         private void SetTimeWarpRate(int rateIndex, bool instant) {
             warpToUT = 0.0;
             if (rateIndex != TimeWarp.CurrentRateIndex) {
-                TimeWarp.fetch.Mode = TimeWarp.Modes.HIGH;
-                TimeWarp.fetch.CancelAutoWarp();
+                timewarp.Mode = TimeWarp.Modes.HIGH;
+                timewarp.CancelAutoWarp();
                 TimeWarp.SetRate(rateIndex, instant);
             }
         }

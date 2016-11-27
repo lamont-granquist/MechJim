@@ -42,7 +42,7 @@ namespace MechJim {
         public void SpawnWindow() {
             List<DialogGUIBase> dialog = new List<DialogGUIBase>();
 
-            dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+/*            dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
                         new DialogGUITextInput("ApA", false, 10, s => { apoap_ApA = Convert.ToDouble(s); return Convert.ToString(apoap_ApA); }),
                         new DialogGUIButton("Apoapsis", Apoapsis, false),
                         }));
@@ -60,9 +60,54 @@ namespace MechJim {
                         }));
             dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
                         new DialogGUIButton("Prograde", ProgradeToggle, false),
+                        })); */
+            dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+                        new DialogGUIButton("NodeExecute", () => { core.node.enabled = !core.node.enabled; }, false),
                         }));
             dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
-                        new DialogGUIButton("NodeExecute", NodeExecute, false),
+                        new DialogGUIButton("Launch", () => { core.ascent.enabled = !core.ascent.enabled; }, false),
+                        }));
+            dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+                        new DialogGUITextInput(Convert.ToString(core.steering.pitchRatePI.Kp), false, 10,
+                                s => { core.steering.pitchRatePI.Kp = Convert.ToDouble(s); return s; }),
+                        new DialogGUITextInput(Convert.ToString(core.steering.pitchRatePI.Ki), false, 10,
+                                s => { core.steering.pitchRatePI.Ki = Convert.ToDouble(s); return s; }),
+                        new DialogGUITextInput(Convert.ToString(core.steering.pitchRatePI.Kd), false, 10,
+                                s => { core.steering.pitchRatePI.Kd = Convert.ToDouble(s); return s; }),
+                        new DialogGUIButton("pitch", NodeExecute, false),
+                        }));
+            dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+                        new DialogGUITextInput(Convert.ToString(core.steering.rollRatePI.Kp), false, 10,
+                                s => { core.steering.rollRatePI.Kp = Convert.ToDouble(s); return s; }),
+                        new DialogGUITextInput(Convert.ToString(core.steering.rollRatePI.Ki), false, 10,
+                                s => { core.steering.rollRatePI.Ki = Convert.ToDouble(s); return s; }),
+                        new DialogGUITextInput(Convert.ToString(core.steering.rollRatePI.Kd), false, 10,
+                                s => { core.steering.rollRatePI.Kd = Convert.ToDouble(s); return s; }),
+                        new DialogGUIButton("roll", NodeExecute, false),
+                        }));
+            dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+                        new DialogGUITextInput(Convert.ToString(core.steering.yawRatePI.Kp), false, 10,
+                                s => { core.steering.yawRatePI.Kp = Convert.ToDouble(s); return s; }),
+                        new DialogGUITextInput(Convert.ToString(core.steering.yawRatePI.Ki), false, 10,
+                                s => { core.steering.yawRatePI.Ki = Convert.ToDouble(s); return s; }),
+                        new DialogGUITextInput(Convert.ToString(core.steering.yawRatePI.Kd), false, 10,
+                                s => { core.steering.yawRatePI.Kd = Convert.ToDouble(s); return s; }),
+                        new DialogGUIButton("yaw", NodeExecute, false),
+                        }));
+            dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+                        new DialogGUITextInput(Convert.ToString(core.steering.pitchPI.Ts), false, 10,
+                                s => { core.steering.pitchPI.Ts = Convert.ToDouble(s); return s; }),
+                        new DialogGUIButton("pitch Ts", NodeExecute, false),
+                        }));
+            dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+                        new DialogGUITextInput(Convert.ToString(core.steering.rollPI.Ts), false, 10,
+                                s => { core.steering.rollPI.Ts = Convert.ToDouble(s); return s; }),
+                        new DialogGUIButton("roll Ts", NodeExecute, false),
+                        }));
+            dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
+                        new DialogGUITextInput(Convert.ToString(core.steering.yawPI.Ts), false, 10,
+                                s => { core.steering.yawPI.Ts = Convert.ToDouble(s); return s; }),
+                        new DialogGUIButton("yaw Ts", NodeExecute, false),
                         }));
 
             dialog.Add(new DialogGUIButton("Dismiss", core.toolbar.SetFalse, true));

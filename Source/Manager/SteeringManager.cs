@@ -16,13 +16,13 @@ namespace MechJim.Manager {
             set { this.rollControlRange = Math.Max(EPSILON, Math.Min(Math.PI, value)); }
         }
 
-        private TorquePI pitchPI = new TorquePI();
-        private TorquePI yawPI = new TorquePI();
-        private TorquePI rollPI = new TorquePI();
+        public TorquePI pitchPI = new TorquePI();
+        public TorquePI yawPI = new TorquePI();
+        public TorquePI rollPI = new TorquePI();
 
-        private PIDLoop pitchRatePI = new PIDLoop(1, 0.1, 0, extraUnwind: true);
-        private PIDLoop yawRatePI = new PIDLoop(1, 0.1, 0, extraUnwind: true);
-        private PIDLoop rollRatePI = new PIDLoop(1, 0.1, 0, extraUnwind: true);
+        public PIDLoop pitchRatePI = new PIDLoop(1, 1.0, 0, extraUnwind: true);
+        public PIDLoop yawRatePI = new PIDLoop(1, 1.0, 0, extraUnwind: true);
+        public PIDLoop rollRatePI = new PIDLoop(1, 1.0, 0, extraUnwind: true);
 
         private Vector3d Actuation = Vector3d.zero;
         private Vector3d TargetTorque = Vector3d.zero;
@@ -38,8 +38,7 @@ namespace MechJim.Manager {
         private Vector3d MaxOmega = Vector3d.zero;
 
         /* FIXME */
-        private Vector3d MomentOfInertia = new Vector3d( 27000, 4500, 27000 );
-        private Vector3d ControlTorque = new Vector3d( 15000, 15000, 15000 );
+        private Vector3d ControlTorque = new Vector3d( 20, 20, 20 );
 
         public SteeringManager(Core core): base(core) {
             MaxStoppingTime = 2;
@@ -77,9 +76,7 @@ namespace MechJim.Manager {
             targetTop = target * Vector3d.up;
             /* targetStarboard = target * Vector3d.right; */
 
-            Omega = Quaternion.Inverse(vesselRotation) * vessel.GetComponent<Rigidbody>().angularVelocity;
-            Omega.x *= -1; // invert pitch
-            Omega.z *= -1; // invert roll
+            Omega = - vessel.angularVelocity;
         }
 
         private void UpdatePredictionPI() {
@@ -97,10 +94,8 @@ namespace MechJim.Manager {
                 Phi[2] *= -1;
 
             for(int i = 0; i < 3; i++) {
-                MaxOmega[i] = ControlTorque[i] * MaxStoppingTime / MomentOfInertia[i];
+                MaxOmega[i] = ControlTorque[i] * MaxStoppingTime / vessel.MOI[i];
             }
-
-            double time = Planetarium.GetUniversalTime();
 
             TargetOmega[0] = pitchRatePI.Update(-Phi[0], 0, MaxOmega[0]);
             TargetOmega[1] = rollRatePI.Update(-Phi[1], 0, MaxOmega[1]);
@@ -111,11 +106,9 @@ namespace MechJim.Manager {
                 rollRatePI.ResetI();
             }
 
-            Debug.Log("time = " + time);
-
-            TargetTorque[0] = pitchPI.Update(Omega[0], TargetOmega[0], MomentOfInertia[0], ControlTorque[0]);
-            TargetTorque[1] = rollPI.Update(Omega[2], TargetOmega[1], MomentOfInertia[1], ControlTorque[1]);
-            TargetTorque[2] = yawPI.Update(Omega[1], TargetOmega[2], MomentOfInertia[2], ControlTorque[2]);
+            TargetTorque[0] = pitchPI.Update(Omega[0], TargetOmega[0], vessel.MOI[0], ControlTorque[0]);
+            TargetTorque[1] = rollPI.Update(Omega[1], TargetOmega[1], vessel.MOI[1], ControlTorque[1]);
+            TargetTorque[2] = yawPI.Update(Omega[2], TargetOmega[2], vessel.MOI[2], ControlTorque[2]);
         }
 
         public void Reset() {
@@ -142,16 +135,6 @@ namespace MechJim.Manager {
             c.pitch = (float)Actuation.x;
             c.roll  = (float)Actuation.y;
             c.yaw   = (float)Actuation.z;
-
-            Debug.Log("target = " + target);
-            Debug.Log("phiTotal = " + PhiTotal);
-            Debug.Log("phi = " + Phi);
-            Debug.Log("omega = " + Omega);
-            Debug.Log("targetOmega = " + TargetOmega);
-            Debug.Log("momentOfInertia = " + MomentOfInertia);
-            Debug.Log("controlTorque = " + ControlTorque);
-            Debug.Log("targetTorque = " + TargetTorque);
-            Debug.Log("actuation = " + Actuation);
         }
 
         public class TorquePI
@@ -184,7 +167,7 @@ namespace MechJim.Manager {
 
             public TorquePI() {
                 Loop = new PIDLoop();
-                Ts = 2;
+                Ts = 2;  /* FIXME: use high pass filter to measure output noise and decrease this value when no noise, and increase when it oscillates */
                 TorqueAdjust = new MovingAverage();
             }
 

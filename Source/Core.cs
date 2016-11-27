@@ -12,6 +12,7 @@ namespace MechJim {
             public SteeringManager steering;
             public AttitudeManager attitude;
             public ThrottleManager throttle;
+            public AscentManager ascent;
             public WarpManager warp;
             public NodeExecutor node;
             public VesselState vesselState;
@@ -26,6 +27,7 @@ namespace MechJim {
                 toolbar.core = this;
                 toolbar.Awake();
                 window = new Window(this);
+                ascent = new AscentManager(this);
                 steering = new SteeringManager(this);
                 attitude = new AttitudeManager(this);
                 throttle = new ThrottleManager(this);
@@ -50,6 +52,8 @@ namespace MechJim {
                 vessel.OnFlyByWire += Drive;
 
                 vesselState.FixedUpdate();
+
+                ascent.FixedUpdate();
 
                 node.FixedUpdate();
             }

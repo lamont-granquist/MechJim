@@ -43,9 +43,9 @@ namespace MechJim.Manager {
                 case AttitudeReference.ORBIT_HORIZONTAL:
                     return Quaternion.LookRotation(Vector3d.Exclude(vessel.up, vessel.GetObtVelocity()), vessel.up);
                 case AttitudeReference.SURFACE_NORTH:
-                    throw new Exception("SURFACE_NORTH unimplemented");
+                    return vesselState.rotationSurface;
                 case AttitudeReference.SURFACE_VELOCITY:
-                    throw new Exception("SURFACE_VELOCITY unimplemented");
+                    return Quaternion.LookRotation(vesselState.surfaceVelocity.normalized, vesselState.up);
                 case AttitudeReference.TARGET:
                     fwd = FlightGlobals.fetch.VesselTarget.GetTransform().position - vessel.GetTransform().position;
                     up = Vector3.Cross(fwd, vesselState.normalPlus);
@@ -61,7 +61,7 @@ namespace MechJim.Manager {
                 case AttitudeReference.SUN:
                     throw new Exception("SUN unimplemented");
                 case AttitudeReference.SURFACE_HORIZONTAL:
-                    throw new Exception("SURFACE_HORIZONTAL unimplemented");
+                    return Quaternion.LookRotation(Vector3d.Exclude(vesselState.up, vessel.srf_velocity.normalized), vesselState.up);
                 default:
                     return Quaternion.identity;
             }

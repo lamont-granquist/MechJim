@@ -15,6 +15,7 @@ namespace MechJim.Manager {
         public override void OnDisable() {
             core.throttle.target = 0.0;
             core.attitude.enabled = false;
+            core.warp.MinimumWarp();
         }
 
         public override void OnFixedUpdate() {
@@ -43,23 +44,29 @@ namespace MechJim.Manager {
                 if ( core.attitude.AngleFromTarget() < 1 && Math.Abs(vesselState.angularVelocity.x) < 0.001 && Math.Abs(vesselState.angularVelocity.z) < 0.001 )
                     core.warp.WarpToUT(BurnUT - leadTime);
 
-            } else if ( BurnUT > vesselState.time ) {
+            } else if ( vesselState.time < ( BurnUT - leadTime ) ) {
                 /* before the burn */
                 if ( core.attitude.AngleFromTarget() < 1 && Math.Abs(vesselState.angularVelocity.x) < 0.001 && Math.Abs(vesselState.angularVelocity.z) < 0.001 )
                     core.warp.WarpToUT(BurnUT - leadTime);
                 if ( core.attitude.AngleFromTarget() > 5 )
                     core.warp.MinimumWarp();
+            } else if ( vesselState.time < BurnUT ) {
+                /* settling time */
+                core.warp.MinimumWarp();
             } else {
                 /* feeling the burn */
                 core.warp.MinimumWarp();
                 core.throttle.target = 0.0;
 
                 if ( core.attitude.AngleFromTarget() > 5 ) {
+                    Debug.Log("way out of bounds");
                     seeking = true;
                 } else if ( core.attitude.AngleFromTarget() < 1 || !seeking ) {
                     double thrustToMass = vesselState.thrustMaximum / vesselState.mass;
                     core.throttle.target = Utils.Clamp(dVLeft / thrustToMass / 2.0, 0.01, 1.0);
                     seeking = false;
+                } else {
+                    Debug.Log("seeking");
                 }
             }
         }
