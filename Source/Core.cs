@@ -16,6 +16,8 @@ namespace MechJim {
             public WarpManager warp;
             public NodeExecutor node;
             public VesselState vesselState;
+            public AutoStage autostage;
+            public Mission mission;
 
             /* constructor - prefer using awake()/start() */
             public Core() {
@@ -34,6 +36,8 @@ namespace MechJim {
                 warp = new WarpManager(this);
                 node = new NodeExecutor(this);
                 vesselState = new VesselState(this);
+                autostage = new AutoStage(this);
+                mission = new Mission(this);
             }
 
             /* starting */
@@ -53,7 +57,11 @@ namespace MechJim {
 
                 vesselState.FixedUpdate();
 
+                mission.FixedUpdate();
+
                 ascent.FixedUpdate();
+
+                autostage.FixedUpdate();
 
                 node.FixedUpdate();
             }

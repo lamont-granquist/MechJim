@@ -20,9 +20,9 @@ namespace MechJim.Manager {
         public TorquePI yawPI = new TorquePI();
         public TorquePI rollPI = new TorquePI();
 
-        public PIDLoop pitchRatePI = new PIDLoop(1, 1.0, 0, extraUnwind: true);
-        public PIDLoop yawRatePI = new PIDLoop(1, 1.0, 0, extraUnwind: true);
-        public PIDLoop rollRatePI = new PIDLoop(1, 1.0, 0, extraUnwind: true);
+        public PIDLoop pitchRatePI = new PIDLoop(1, 0.1, 0, extraUnwind: true);
+        public PIDLoop yawRatePI = new PIDLoop(1, 0.1, 0, extraUnwind: true);
+        public PIDLoop rollRatePI = new PIDLoop(1, 0.1, 0, extraUnwind: true);
 
         private Vector3d Actuation = Vector3d.zero;
         private Vector3d TargetTorque = Vector3d.zero;

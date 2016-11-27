@@ -27,5 +27,9 @@ namespace MechJim.Extensions {
         public static Vector3d forward(this Vessel vessel) {
             return vessel.GetTransform().up;
         }
+
+        public static bool LiftedOff(this Vessel vessel) {
+            return vessel.situation != Vessel.Situations.PRELAUNCH;
+        }
     }
 }

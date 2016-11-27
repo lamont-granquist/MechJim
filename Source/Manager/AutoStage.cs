@@ -1,0 +1,34 @@
+using UnityEngine;
+using KSP.UI.Screens;
+using MechJim.Extensions;
+
+namespace MechJim.Manager {
+    public class AutoStage: ManagerBase {
+        public int maxstage { get; set; }
+
+        public AutoStage(Core core): base(core) {
+        }
+
+        public bool FlamedOutEngines() {
+            for (int i = 0; i < vessel.parts.Count; i++) {
+                Part p = vessel.parts[i];
+                if (p.IsEngine() && !p.EngineHasFuel())
+                    return true;
+            }
+                return false;
+        }
+
+        public override void OnFixedUpdate() {
+            if (StageManager.CurrentStage <= maxstage)
+                return;
+
+            if (vesselState.thrustMaximum == 0.0) {
+                StageManager.ActivateNextStage();
+            }
+
+            if (FlamedOutEngines()) {
+                StageManager.ActivateNextStage();
+            }
+        }
+    }
+}
