@@ -4,7 +4,6 @@ using MechJim.Extensions;
 using UnityEngine;
 
 /* this is a stock launcher, not suitable for RSS/RO/RF */
-
 namespace MechJim.Manager {
     public class AscentManager: ManagerBase {
         public double target_altitude { get; set; }
@@ -15,7 +14,7 @@ namespace MechJim.Manager {
         public double targetAPtime { get; set; }
         public double low_pressure_cutoff { get; set; } /* kPa */
 
-        public PIDLoop pitchPID = new PIDLoop(2, 0.1, 0, extraUnwind: true);
+        public PIDLoop pitchPID = new PIDLoop(2, 0.4, 0, extraUnwind: true);
 
         public enum ThrottleState {
             LAUNCH,
@@ -82,14 +81,19 @@ namespace MechJim.Manager {
 
             throttleState = throttleMapping[throttleState]();
             if ( throttleState != lastThrottleState ) {
-                Debug.Log("throttleState changed to " + throttleState);
                 throttleMapping[throttleState]();
             }
             attitudeState = attitudeMapping[attitudeState]();
             if ( attitudeState != lastAttitudeState ) {
-                Debug.Log("attitudeState changed to " + attitudeState);
                 attitudeMapping[attitudeState]();
             }
+        }
+
+        /* fix timeToAp to be negative when we're past the apoapsis and falling */
+        private double adjustedTimeToAp() {
+            if ( orbit.timeToAp > orbit.timeToPe )
+                return orbit.timeToAp - orbit.period;
+            return orbit.timeToAp;
         }
 
         /* burn to raise and maintain Ap at intermediate altitude */
@@ -97,11 +101,10 @@ namespace MechJim.Manager {
             if (orbit.ApA > intermediate_altitude) {
                 core.warp.WarpAtPhysicsRate(4, true);
                 core.throttle.target = 0.0;
-                if ( orbit.timeToAp < targetAPtime )
+                if ( adjustedTimeToAp() < targetAPtime )
                     return ThrottleState.FINAL;
             } else {
                 core.warp.WarpAtPhysicsRate(0, true);
-                Debug.Log("launch throttle");
                 core.throttle.target = 1.0;
             }
             return ThrottleState.LAUNCH;
@@ -111,7 +114,6 @@ namespace MechJim.Manager {
         private ThrottleState ThrottleFinal() {
             if (orbit.ApA < target_altitude) {
                 core.warp.WarpAtPhysicsRate(0, true);
-                Debug.Log("final throttle");
                 core.throttle.target = 1.0;
             } else {
                 core.warp.WarpAtPhysicsRate(4, true);
@@ -165,10 +167,9 @@ namespace MechJim.Manager {
 
         /* track prograde out of the atmosphere */
         private AttitudeState AttitudePrograde() {
-            if (vessel.altitude > mainBody.RealMaxAtmosphereAltitude())
+            if (vessel.altitude > mainBody.RealMaxAtmosphereAltitude() && orbit.ApA > target_altitude )
                 return AttitudeState.EXIT;
-            double pitch = pitchPID.Update(orbit.timeToAp, targetAPtime, 0, 30);
-            Debug.Log("pitch = " + pitch + " error = " + ( targetAPtime - orbit.timeToAp ) );
+            double pitch = pitchPID.Update(adjustedTimeToAp(), targetAPtime, 0, 30);
             core.attitude.attitudeTo(Quaternion.AngleAxis((float)pitch, Vector3.left) * Vector3d.forward, AttitudeReference.ORBIT);
             return AttitudeState.PROGRADE;
         }

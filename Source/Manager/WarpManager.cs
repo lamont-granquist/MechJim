@@ -58,8 +58,8 @@ namespace MechJim.Manager {
             double r = 0.0;
             int index = 0;
             for(int i = 0; i < timewarp.physicsWarpRates.Length; i++) {
-                if ( timewarp.physicsWarpRates[i] < rate && timewarp.physicsWarpRates[i] > r ) {
-                    rate = timewarp.physicsWarpRates[i];
+                if ( timewarp.physicsWarpRates[i] <= rate && timewarp.physicsWarpRates[i] > r ) {
+                    r = timewarp.physicsWarpRates[i];
                     index = i;
                 }
             }
@@ -70,8 +70,8 @@ namespace MechJim.Manager {
             double r = 0.0;
             int index = 0;
             for(int i = 0; i < timewarp.warpRates.Length; i++) {
-                if ( timewarp.warpRates[i] < rate && timewarp.warpRates[i] > r ) {
-                    rate = timewarp.warpRates[i];
+                if ( timewarp.warpRates[i] <= rate && timewarp.warpRates[i] > r ) {
+                    r = timewarp.warpRates[i];
                     index = i;
                 }
             }

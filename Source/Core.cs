@@ -17,6 +17,7 @@ namespace MechJim {
             public NodeExecutor node;
             public VesselState vesselState;
             public AutoStage autostage;
+            public AutoFairing autofairing;
             public Mission mission;
 
             /* constructor - prefer using awake()/start() */
@@ -37,6 +38,7 @@ namespace MechJim {
                 node = new NodeExecutor(this);
                 vesselState = new VesselState(this);
                 autostage = new AutoStage(this);
+                autofairing = new AutoFairing(this);
                 mission = new Mission(this);
             }
 
@@ -60,6 +62,8 @@ namespace MechJim {
                 mission.FixedUpdate();
 
                 ascent.FixedUpdate();
+
+                autofairing.FixedUpdate();
 
                 autostage.FixedUpdate();
 

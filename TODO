@@ -1,0 +1,3 @@
+- consolidate code to walk the whole parts tree, ideally once
+- fix the auto-staging code to be way smarter and be parts-tree aware
+  (probably mark all parts with the inverse stage that drops them

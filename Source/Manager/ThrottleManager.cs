@@ -1,4 +1,3 @@
-/* portions probably plagiarized from MJ */
 using UnityEngine;
 
 namespace MechJim.Manager {
@@ -11,8 +10,9 @@ namespace MechJim.Manager {
 
         public override void OnDisable() {
             target = 0.0;
-            if (vessel != null)
-                vessel.ctrlState.mainThrottle = 0.0f;
+            if (vessel != null) {
+                FlightInputHandler.state.mainThrottle = 0.0f;
+            }
         }
 
         public override void OnDrive(FlightCtrlState c) {

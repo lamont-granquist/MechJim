@@ -59,14 +59,11 @@ namespace MechJim.Manager {
                 core.throttle.target = 0.0;
 
                 if ( core.attitude.AngleFromTarget() > 5 ) {
-                    Debug.Log("way out of bounds");
                     seeking = true;
                 } else if ( core.attitude.AngleFromTarget() < 1 || !seeking ) {
                     double thrustToMass = vesselState.thrustMaximum / vesselState.mass;
                     core.throttle.target = Utils.Clamp(dVLeft / thrustToMass / 2.0, 0.01, 1.0);
                     seeking = false;
-                } else {
-                    Debug.Log("seeking");
                 }
             }
         }
