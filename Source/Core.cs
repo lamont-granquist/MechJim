@@ -16,6 +16,7 @@ namespace MechJim {
             public WarpManager warp;
             public NodeExecutor node;
             public VesselState vesselState;
+            public AutoPanel autopanel;
             public AutoStage autostage;
             public AutoFairing autofairing;
             public Mission mission;
@@ -37,6 +38,7 @@ namespace MechJim {
                 warp = new WarpManager(this);
                 node = new NodeExecutor(this);
                 vesselState = new VesselState(this);
+                autopanel = new AutoPanel(this);
                 autostage = new AutoStage(this);
                 autofairing = new AutoFairing(this);
                 mission = new Mission(this);
@@ -63,8 +65,8 @@ namespace MechJim {
 
                 ascent.FixedUpdate();
 
+                autopanel.FixedUpdate();
                 autofairing.FixedUpdate();
-
                 autostage.FixedUpdate();
 
                 node.FixedUpdate();

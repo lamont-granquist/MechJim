@@ -9,12 +9,14 @@ namespace MechJim.Manager {
         }
 
         public override void OnDisable() {
+            core.autopanel.enabled = false;
             core.autostage.enabled = false;
             core.autofairing.enabled = false;
             core.ascent.enabled = false;
         }
 
         public override void OnEnable() {
+            core.autopanel.enabled = true;
             core.autostage.enabled = true;
             core.autofairing.enabled = true;
             core.ascent.enabled = true;
