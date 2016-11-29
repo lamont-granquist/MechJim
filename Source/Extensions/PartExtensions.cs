@@ -8,15 +8,16 @@ namespace MechJim.Extensions {
             return p.Modules.Contains("ProceduralFairingDecoupler") || p.Modules.Contains("ModuleProceduralFairing");
         }
 
+        public static void SendMethodToModuleNamed(this Part p, string method, string module) {
+            if (p.Modules.Contains(module)) {
+                PartModule m = p.Modules[module];
+                m.GetType().GetMethod(method).Invoke(m, null);
+            }
+        }
+
         public static void DeployFairing(this Part p) {
-            if (p.Modules.Contains("ModuleProceduralFairing")) { // stock and KW fairings
-                PartModule m = p.Modules["ModuleProceduralFairing"];
-                m.GetType().GetMethod("DeployFairing").Invoke(m, null);
-            }
-            if (p.Modules.Contains("ProceduralFairingDecoupler")) { // proc fairings
-                PartModule m = p.Modules["ProceduralFairingDecoupler"];
-                m.GetType().GetMethod("Jettison").Invoke(m, null);
-            }
+            p.SendMethodToModuleNamed("ModuleProceduralFairing", "DeployFairing");  // stock and KW fairings
+            p.SendMethodToModuleNamed("ProceduralFairingDecoupler", "Jettison");    // proc fairings
         }
 
         public static bool IsEngine(this Part p) {
