@@ -1,11 +1,17 @@
 using System;
 using UnityEngine;
+using MechJim.PartWrapper;
+using MechJim.Extensions;
 
 namespace MechJim.Manager {
     public class VesselState: ManagerBase {
         public VesselState(Core core): base(core) {
             enabled = true;
         }
+
+        public PartWrapperList<EngineWrapper> engines = new PartWrapperList<EngineWrapper>();
+        public PartWrapperList<FairingWrapper> fairings = new PartWrapperList<FairingWrapper>();
+        public PartWrapperList<SolarPanelWrapper> solarpanels = new PartWrapperList<SolarPanelWrapper>();
 
         public double mass { get { return vessel.totalMass; } }
         public double time { get { return Planetarium.GetUniversalTime(); } }
@@ -23,7 +29,6 @@ namespace MechJim.Manager {
         public Quaternion rotationVesselSurface;
 
         public Vector3d velocityMainBodySurface;
-
 
         public double rocketAoA;
         /* public double planeAoA;
@@ -48,6 +53,12 @@ namespace MechJim.Manager {
 
         public double totalVe;
 
+        public void StartMark() {
+            engines.StartMark();
+            fairings.StartMark();
+            solarpanels.StartMark();
+        }
+
         public override void OnFixedUpdate() {
             rotationSurface = Quaternion.LookRotation(north, up);
             rotationVesselSurface = Quaternion.Inverse(Quaternion.Euler(90, 0, 0) * Quaternion.Inverse(vessel.GetTransform().rotation) * rotationSurface);
@@ -71,9 +82,19 @@ namespace MechJim.Manager {
 
             double thrustOverVe = 0.0;
 
+            StartMark();
+
             /* FIXME: make betterer vessel simulation */
             for (int i = 0; i < vessel.parts.Count; i++) {
                 Part p = vessel.parts[i];
+
+                if (p.IsEngine())
+                    engines.AddPart(p);
+                if (p.IsSolarPanel())
+                    solarpanels.AddPart(p);
+                if (p.IsFairing())
+                    fairings.AddPart(p);
+
                 for (int m = 0; m < p.Modules.Count; m++) {
                     PartModule pm = p.Modules[m];
                     if (!pm.isEnabled)
