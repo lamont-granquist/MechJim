@@ -19,7 +19,7 @@ namespace MechJim.Manager {
         }
 
         protected override void OnEnable() {
-            missionState = new StateFn(MissionLaunch);
+            missionState = MissionPrelaunch;
         }
 
         public override void OnFixedUpdate() {
@@ -27,6 +27,7 @@ namespace MechJim.Manager {
 
             missionState = missionState(false);
             while (missionState != lastMissionState ) {
+                Debug.Log("changed state from: " + lastMissionState.Method.Name + " to " + missionState.Method.Name);
                 lastMissionState = missionState;
                 missionState = missionState(true);
             }
