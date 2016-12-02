@@ -19,6 +19,7 @@ namespace MechJim.Manager {
 
         public void Enable() {
             if (!enabled) {
+                Debug.Log("Enabling " + this.GetType().Name);
                 foreach( EnableAttribute attr in this.GetType().GetCustomAttributes(typeof(EnableAttribute), true) ) {
                     foreach(Type klass in attr.klasses ) {
                         core.GetManager(klass).Enable();
@@ -26,12 +27,12 @@ namespace MechJim.Manager {
                 }
                 OnEnable();
             }
-            Debug.Log("Enabling " + this.GetType().Name);
             enabled = true;
         }
 
         public void Disable() {
             if (enabled) {
+                Debug.Log("Disabling " + this.GetType().Name);
                 foreach( EnableAttribute attr in this.GetType().GetCustomAttributes(typeof(EnableAttribute), true) ) {
                     foreach(Type klass in attr.klasses ) {
                         core.GetManager(klass).Disable();
@@ -39,7 +40,6 @@ namespace MechJim.Manager {
                 }
                 OnDisable();
             }
-            Debug.Log("Disabling " + this.GetType().Name);
             enabled = false;
         }
 

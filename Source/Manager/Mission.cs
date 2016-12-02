@@ -7,23 +7,11 @@ namespace MechJim.Manager {
 
     [Enable(typeof(AutoPanel), typeof(AutoStage), typeof(AutoFairing))]
     public class Mission: ManagerBase {
-        public enum MissionState {
-            PRELAUNCH,
-            LAUNCH,
-            CIRCULARIZE,
-        }
+        public delegate StateFn StateFn(bool f);
 
-        public MissionState missionState;
+        public StateFn missionState;
 
-        private IDictionary<MissionState, Func<bool, MissionState>> missionMapping;
-
-        public Mission(Core core): base(core) {
-            missionMapping = new Dictionary<MissionState, Func<bool, MissionState>> {
-                { MissionState.PRELAUNCH, MissionPrelaunch },
-                { MissionState.LAUNCH, MissionLaunch },
-                { MissionState.CIRCULARIZE, MissionCircularize },
-            };
-        }
+        public Mission(Core core): base(core) { }
 
         protected override void OnDisable() {
             core.ascent.Disable();
@@ -31,42 +19,43 @@ namespace MechJim.Manager {
         }
 
         protected override void OnEnable() {
-            missionState = MissionState.PRELAUNCH;
+            missionState = new StateFn(MissionLaunch);
         }
 
         public override void OnFixedUpdate() {
-            MissionState lastMissionState = missionState;
+            StateFn lastMissionState = missionState;
 
-            missionState = missionMapping[missionState](false);
+            missionState = missionState(false);
             while (missionState != lastMissionState ) {
                 lastMissionState = missionState;
-                missionState = missionMapping[missionState](true);
+                missionState = missionState(true);
             }
         }
 
-        private MissionState MissionPrelaunch(bool stateChanged) {
-            return MissionState.LAUNCH;
+        private StateFn MissionPrelaunch(bool stateChanged) {
+            return MissionLaunch;
         }
 
         /* FIXME: AscentManager is only enabled for this state */
-        private MissionState MissionLaunch(bool stateChanged) {
+        private StateFn MissionLaunch(bool stateChanged) {
             if (stateChanged) {
                 core.ascent.Enable();
             }
             if (core.ascent.done)
-                return MissionState.CIRCULARIZE;
-            return MissionState.LAUNCH;
+                return MissionCircularize;
+            return MissionLaunch;
         }
 
+
         /* FIXME: NodeExecutor is only enabled for this state */
-        private MissionState MissionCircularize(bool stateChanged) {
+        private StateFn MissionCircularize(bool stateChanged) {
             if (stateChanged) {
                 var maneuver = new Maneuver.Circularize(vessel, orbit, Planetarium.GetUniversalTime() + orbit.timeToAp);
                 maneuver.PlaceManeuverNode();
                 core.ascent.Disable();
                 core.node.Enable();
             }
-            return MissionState.CIRCULARIZE;
+            return MissionCircularize;
         }
     }
 }

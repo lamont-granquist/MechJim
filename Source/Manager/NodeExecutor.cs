@@ -11,16 +11,7 @@ namespace MechJim.Manager {
         private bool seeking;
 
         protected override void OnEnable() {
-         /*   core.throttle.enabled = true;
-            core.attitude.enabled = true;
-            core.warp.enabled = true; */
             seeking = true; /* get good lock before starting burn */
-        }
-
-        protected override void OnDisable() {
-          /*  core.throttle.enabled = false;
-            core.attitude.enabled = false;
-            core.warp.enabled = false; */
         }
 
         public override void OnFixedUpdate() {
