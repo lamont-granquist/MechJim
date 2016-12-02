@@ -2,6 +2,8 @@
 using System.Text;
 using UnityEngine;
 using MechJim.Manager;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace MechJim {
     [KSPAddon(KSPAddon.Startup.Flight, false)]
@@ -9,20 +11,50 @@ namespace MechJim {
             public Window window;
             public Toolbar toolbar;
             public Vessel vessel;
-            public SteeringManager steering;
-            public AttitudeManager attitude;
-            public ThrottleManager throttle;
-            public AscentManager ascent;
-            public WarpManager warp;
-            public NodeExecutor node;
-            public VesselState vesselState;
-            public AutoPanel autopanel;
-            public AutoStage autostage;
-            public AutoFairing autofairing;
-            public Mission mission;
+            public SteeringManager steering { get { return (SteeringManager) GetManager<SteeringManager>(); } }
+            public AttitudeManager attitude { get { return (AttitudeManager) GetManager<AttitudeManager>(); } }
+            public ThrottleManager throttle { get { return (ThrottleManager) GetManager<ThrottleManager>(); } }
+            public AscentManager ascent { get { return (AscentManager) GetManager<AscentManager>(); } }
+            public WarpManager warp { get { return (WarpManager) GetManager<WarpManager>(); } }
+            public NodeExecutor node { get { return (NodeExecutor) GetManager<NodeExecutor>(); } }
+            public VesselState vesselState { get { return (VesselState) GetManager<VesselState>(); } }
+            public AutoPanel autopanel { get { return (AutoPanel) GetManager<AutoPanel>(); } }
+            public AutoStage autostage { get { return (AutoStage) GetManager<AutoStage>(); } }
+            public AutoFairing autofairing { get { return (AutoFairing) GetManager<AutoFairing>(); } }
+            public Mission mission { get { return (Mission) GetManager<Mission>(); } }
 
             /* constructor - prefer using awake()/start() */
-            public Core() {
+            public Core() { }
+
+            public List<Type> managerClasses = new List<Type>();
+            public Dictionary<Type,ManagerBase> managerDict = new Dictionary<Type,ManagerBase>();
+
+            private void LoadManagers() {
+                managerClasses.Clear();
+                managerDict.Clear();
+                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies()) {
+                    foreach (var type in asm.GetTypes()) {
+                        if (type.IsSubclassOf(typeof(ManagerBase))) {
+                            ConstructorInfo constructorInfo = type.GetConstructor(new[] { typeof(Core) });
+                            managerClasses.Add(type);
+                            managerDict.Add(type, (ManagerBase)(constructorInfo.Invoke(new object[] { this })));
+                        }
+                    }
+                }
+            }
+
+            public ManagerBase GetManager(Type t) {
+                return managerDict[t];
+            }
+
+            public ManagerBase GetManager<T>() where T: ManagerBase {
+                return managerDict[typeof(T)];
+            }
+
+            public object InvokeManager<T>(string method, object[] parameters) where T: ManagerBase {
+                ManagerBase m = GetManager<T>();
+                MethodInfo mi = typeof(T).GetMethod(method);
+                return mi.Invoke(m, parameters);
             }
 
             /* entering scene */
@@ -31,17 +63,9 @@ namespace MechJim {
                 toolbar.core = this;
                 toolbar.Awake();
                 window = new Window(this);
-                ascent = new AscentManager(this);
-                steering = new SteeringManager(this);
-                attitude = new AttitudeManager(this);
-                throttle = new ThrottleManager(this);
-                warp = new WarpManager(this);
-                node = new NodeExecutor(this);
-                vesselState = new VesselState(this);
-                autopanel = new AutoPanel(this);
-                autostage = new AutoStage(this);
-                autofairing = new AutoFairing(this);
-                mission = new Mission(this);
+
+                LoadManagers();
+                GetManager<VesselState>().Enable();
             }
 
             /* starting */
@@ -59,7 +83,9 @@ namespace MechJim {
                 vessel.OnFlyByWire -= Drive;
                 vessel.OnFlyByWire += Drive;
 
-                vesselState.FixedUpdate();
+                /* always force this before everyone else */
+                GetManager<VesselState>().Enable();
+                GetManager<VesselState>().FixedUpdate();
 
                 mission.FixedUpdate();
 
@@ -70,14 +96,6 @@ namespace MechJim {
                 autostage.FixedUpdate();
 
                 node.FixedUpdate();
-            }
-
-            public void ProgradeToggle() {
-                if (attitude.enabled) {
-                    attitude.enabled = false;
-                } else {
-                    attitude.attitudeTo(Vector3d.forward, AttitudeReference.ORBIT);
-                }
             }
 
             /* leaving scene */

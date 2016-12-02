@@ -18,19 +18,12 @@ namespace MechJim.Manager {
         SURFACE_HORIZONTAL, // forward = surface velocity horizontal component, up = surface normal
     }
 
+    [Enable(typeof(SteeringManager))]
     public class AttitudeManager: ManagerBase {
         private Quaternion attitude;
         private AttitudeReference reference;
 
         public AttitudeManager(Core core) : base(core) { }
-
-        public override void OnEnable() {
-            core.steering.enabled = true;
-        }
-
-        public override void OnDisable() {
-            core.steering.enabled = false;
-        }
 
         public Quaternion attitudeGetReferenceRotation(AttitudeReference reference) {
             Vector3d fwd, up;
@@ -78,7 +71,7 @@ namespace MechJim.Manager {
         }
 
         public void attitudeTo(Quaternion attitude, AttitudeReference reference) {
-            enabled = true;
+            Enable();
             this.attitude = attitude;
             this.reference = reference;
         }
@@ -96,12 +89,12 @@ namespace MechJim.Manager {
 
         public override void OnDrive(FlightCtrlState c) {
             if (FlightGlobals.fetch.VesselTarget == null && (reference == AttitudeReference.TARGET || reference == AttitudeReference.TARGET_ORIENTATION || reference == AttitudeReference.RELATIVE_VELOCITY)) {
-                enabled = false;
+                Disable();
                 return;
             }
 
             if ((reference == AttitudeReference.MANEUVER_NODE) && (vessel.patchedConicSolver.maneuverNodes.Count == 0)) {
-                enabled = false;
+                Disable();
                 return;
             }
 

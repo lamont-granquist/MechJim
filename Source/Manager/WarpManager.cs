@@ -6,21 +6,23 @@ namespace MechJim.Manager {
     public class WarpManager: ManagerBase {
         protected TimeWarp timewarp { get { return TimeWarp.fetch; } }
 
-        private double warpToUT = 0.0;
+        private double warpToUT = -1;
 
         public WarpManager(Core core): base(core) { }
 
-        public override void OnDisable() {
+        protected override void OnDisable() {
             MinimumWarp();
         }
 
-        public void WarpToUT(double UT) {
-            if (UT != warpToUT) {
-                timewarp.WarpTo(UT, timewarp.warpRates.Length);
-                warpToUT = UT;
-            }
+        public override void OnFixedUpdate() {
+            if(warpToUT > 0)
+                WarpToUT(warpToUT);
+        }
 
-            if (!vessel.LandedOrSplashed && vessel.altitude < timewarp.GetAltitudeLimit(1, mainBody))
+        public void WarpToUT(double UT) {
+            warpToUT = UT;
+
+            if (!vessel.LandedOrSplashed && vessel.altitude > timewarp.GetAltitudeLimit(1, mainBody))
                 SetRegularMode();
             else
                 SetPhysicsMode();
@@ -32,18 +34,24 @@ namespace MechJim.Manager {
         }
 
         public void WarpAtRegularRate(double rate, bool instant = false) {
+            warpToUT = -1;
+
             SetRegularMode();
 
             WarpAtRate(rate, instant);
         }
 
         public void WarpAtPhysicsRate(double rate, bool instant = false) {
+            warpToUT = -1;
+
             SetPhysicsMode();
 
             WarpAtRate(rate, instant);
         }
 
         public void MinimumWarp(bool instant = true) {
+            warpToUT = -1;
+
             WarpAtIndex(0, instant);
         }
 
@@ -90,9 +98,7 @@ namespace MechJim.Manager {
         }
 
         private void WarpAtIndex(int rateIndex, bool instant = false) {
-            warpToUT = 0.0;
             if (rateIndex != TimeWarp.CurrentRateIndex) {
-                timewarp.CancelAutoWarp();
                 TimeWarp.SetRate(rateIndex, instant);
             }
         }

@@ -1,6 +1,5 @@
-/* portions plagiarized from MechJeb */
-
 using System;
+using UnityEngine;
 
 namespace MechJim.Extensions {
     public static class VesselExtensions {
@@ -19,8 +18,13 @@ namespace MechJim.Extensions {
             UT = Math.Max(UT, Planetarium.GetUniversalTime());
 
             Vector3d nodeDV = patch.DeltaVToManeuverNodeCoordinates(UT, dV);
+            Debug.Log("nodeDV = " + nodeDV);
             ManeuverNode mn = vessel.patchedConicSolver.AddManeuverNode(UT);
-            mn.OnGizmoUpdated(nodeDV, UT);
+            mn.DeltaV = nodeDV;
+            Debug.Log("UT = " + UT);
+            Debug.Log("Node = " + mn);
+            vessel.patchedConicSolver.UpdateFlightPlan();
+            /* mn.OnGizmoUpdated(nodeDV, UT); */
             return mn;
         }
 

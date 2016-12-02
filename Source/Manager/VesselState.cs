@@ -5,9 +5,7 @@ using MechJim.Extensions;
 
 namespace MechJim.Manager {
     public class VesselState: ManagerBase {
-        public VesselState(Core core): base(core) {
-            enabled = true;
-        }
+        public VesselState(Core core): base(core) { }
 
         public PartWrapperList<EngineWrapper> engines = new PartWrapperList<EngineWrapper>();
         public PartWrapperList<FairingWrapper> fairings = new PartWrapperList<FairingWrapper>();
@@ -57,6 +55,12 @@ namespace MechJim.Manager {
             engines.StartMark();
             fairings.StartMark();
             solarpanels.StartMark();
+        }
+
+        public void Sweep() {
+            engines.Sweep();
+            fairings.Sweep();
+            solarpanels.Sweep();
         }
 
         public override void OnFixedUpdate() {
@@ -133,6 +137,8 @@ namespace MechJim.Manager {
                     }
                 }
             }
+
+            Sweep();
 
             totalVe = thrustMaximum / thrustOverVe;
         }

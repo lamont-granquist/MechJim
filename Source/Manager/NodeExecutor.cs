@@ -2,27 +2,33 @@ using System;
 using UnityEngine;
 
 namespace MechJim.Manager {
+
+    [Enable(typeof(ThrottleManager), typeof(AttitudeManager), typeof(WarpManager))]
     public class NodeExecutor: ManagerBase {
         public NodeExecutor(Core core): base(core) { }
         public double tolerance = 0.1;
         public double leadTime = 3.0;
         private bool seeking;
 
-        public override void OnEnable() {
-            seeking = true;
+        protected override void OnEnable() {
+         /*   core.throttle.enabled = true;
+            core.attitude.enabled = true;
+            core.warp.enabled = true; */
+            seeking = true; /* get good lock before starting burn */
         }
 
-        public override void OnDisable() {
-            core.throttle.target = 0.0;
+        protected override void OnDisable() {
+          /*  core.throttle.enabled = false;
             core.attitude.enabled = false;
-            core.warp.MinimumWarp();
+            core.warp.enabled = false; */
         }
 
         public override void OnFixedUpdate() {
             core.throttle.target = 0.0;
 
             if (vessel.patchedConicSolver.maneuverNodes.Count == 0) {
-                enabled = false;
+                Debug.Log("NodeExecutor: no maneuver node to execute");
+                Disable();
                 return;
             }
 
@@ -30,13 +36,13 @@ namespace MechJim.Manager {
             double dVLeft = node.GetBurnVector(orbit).magnitude;
 
             if (dVLeft < tolerance && core.attitude.AngleFromTarget() > 5) {
+                Debug.Log("NodeExecutor: done with node, removing it");
                 node.RemoveSelf();
-                enabled = false;
+                Disable();
                 return;
             }
 
             core.attitude.attitudeTo(Vector3d.forward, AttitudeReference.MANEUVER_NODE);
-
             double BurnUT = node.UT - BurnTime(dVLeft) / 2.0;
 
             if ( vesselState.time < ( BurnUT - 300 ) ) {
@@ -63,6 +69,7 @@ namespace MechJim.Manager {
                 } else if ( core.attitude.AngleFromTarget() < 1 || !seeking ) {
                     double thrustToMass = vesselState.thrustMaximum / vesselState.mass;
                     core.throttle.target = Utils.Clamp(dVLeft / thrustToMass / 2.0, 0.01, 1.0);
+                    Debug.Log("core.throttle.target = " + core.throttle.target);
                     seeking = false;
                 }
             }

@@ -8,7 +8,7 @@ namespace MechJim.Manager {
             target = 0.0;
         }
 
-        public override void OnDisable() {
+        protected override void OnDisable() {
             target = 0.0;
             if (vessel != null) {
                 FlightInputHandler.state.mainThrottle = 0.0f;

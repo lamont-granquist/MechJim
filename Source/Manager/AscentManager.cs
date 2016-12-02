@@ -5,13 +5,15 @@ using UnityEngine;
 
 /* this is a stock launcher, not suitable for RSS/RO/RF */
 namespace MechJim.Manager {
+
+    [Enable(typeof(ThrottleManager), typeof(AttitudeManager), typeof(WarpManager))]
     public class AscentManager: ManagerBase {
+        public bool done { get; set; }
         public double target_altitude { get; set; }
         public double intermediate_altitude { get; set; }
         public double start_speed { get; set; }
         public double start_altitude { get; set; }
         public double start_turn { get; set; }
-        public double targetAPtime { get; set; }
         public double low_pressure_cutoff { get; set; } /* kPa */
 
         public PIDLoop pitchPID = new PIDLoop(2, 0.4, 0, extraUnwind: true);
@@ -32,8 +34,10 @@ namespace MechJim.Manager {
             EXIT,
         }
 
-        public ThrottleState throttleState;
-        public AttitudeState attitudeState;
+        private double targetAPtime { get; set; }
+
+        private ThrottleState throttleState;
+        private AttitudeState attitudeState;
 
         private IDictionary<ThrottleState, Func<ThrottleState>> throttleMapping;
         private IDictionary<AttitudeState, Func<AttitudeState>> attitudeMapping;
@@ -54,25 +58,18 @@ namespace MechJim.Manager {
             };
             target_altitude = 100000;
             intermediate_altitude = 45000;
-            start_altitude = 100;
-            start_speed = 100;
-            start_turn = 10;
-            targetAPtime = 40;
+            start_altitude = 50;
+            start_speed = 50;
+            start_turn = 18;
             low_pressure_cutoff = 1.0;
+            done = false;
         }
 
-        public override void OnDisable() {
-            core.throttle.enabled = false;
-            core.attitude.enabled = false;
-            core.warp.enabled = false;
-        }
 
-        public override void OnEnable() {
+        protected override void OnEnable() {
             throttleState = ThrottleState.LAUNCH;
             attitudeState = AttitudeState.LAUNCH;
-            core.throttle.enabled = true;
-            core.attitude.enabled = true;
-            core.warp.enabled = true;
+            done = false;
         }
 
         public override void OnFixedUpdate() {
@@ -96,11 +93,21 @@ namespace MechJim.Manager {
             return orbit.timeToAp;
         }
 
+        /* FIXME: BAD COPYPASTA ALERT! */
+        private double BurnTime(double dv) {
+            double burntime = vesselState.mass * vesselState.totalVe / vesselState.thrustMaximum * ( 1 - Math.Exp(-dv / vesselState.totalVe) );
+            if ( double.IsNaN(burntime) )
+                return 0.0;
+            return burntime;
+        }
+
         /* burn to raise and maintain Ap at intermediate altitude */
         private ThrottleState ThrottleLaunch() {
             if (orbit.ApA > intermediate_altitude) {
                 core.warp.WarpAtPhysicsRate(4, true);
-                core.throttle.target = 0.0;
+                core.throttle.target = -1.0;
+                double dV = mainBody.CircVelocityAtRadius(orbit.ApR) - orbit.SwappedVelocityAtApoapsis().magnitude;
+                targetAPtime = BurnTime(dV/2);
                 if ( adjustedTimeToAp() < targetAPtime )
                     return ThrottleState.FINAL;
             } else {
@@ -128,6 +135,7 @@ namespace MechJim.Manager {
         private ThrottleState ThrottleExit() {
             core.warp.MinimumWarp();
             core.throttle.target = 0.0;
+            done = true;
             return ThrottleState.EXIT;
         }
 
@@ -170,13 +178,13 @@ namespace MechJim.Manager {
             if (vessel.altitude > mainBody.RealMaxAtmosphereAltitude() && orbit.ApA > target_altitude )
                 return AttitudeState.EXIT;
             double pitch = pitchPID.Update(adjustedTimeToAp(), targetAPtime, 0, 30);
-            core.attitude.attitudeTo(Quaternion.AngleAxis((float)pitch, Vector3.left) * Vector3d.forward, AttitudeReference.ORBIT);
+            core.attitude.attitudeTo(Quaternion.AngleAxis((float)pitch, Vector3.left) * Vector3d.forward, AttitudeReference.SURFACE_HORIZONTAL);
             return AttitudeState.PROGRADE;
         }
 
         /* done once we're out of the atmosphere */
         private AttitudeState AttitudeExit() {
-            enabled = false;
+            done = true;
             return AttitudeState.EXIT;
         }
     }

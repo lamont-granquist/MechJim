@@ -35,22 +35,12 @@ namespace MechJim.Extensions {
         }
 
         public static bool IsEngine(this Part p) {
-            for (int i = 0; i < p.Modules.Count; i++) {
-                PartModule m = p.Modules[i];
-                if (m is ModuleEngines)
-                    return true;
-            }
-            return false;
+            return p.Modules.Contains("ModuleEngines");
         }
 
         public static bool EngineHasFuel(this Part p) {
-            for (int i = 0; i < p.Modules.Count; i++) {
-                PartModule m = p.Modules[i];
-                ModuleEngines eng = m as ModuleEngines;
-                if (eng != null)
-                    return !eng.getFlameoutState;
-            }
-            return false;
+            ModuleEngines m = (ModuleEngines)p.Modules["ModuleEngines"];
+            return !m.getFlameoutState;
         }
     }
 }

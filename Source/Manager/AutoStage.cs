@@ -15,7 +15,7 @@ namespace MechJim.Manager {
                 if (p.IsEngine() && !p.EngineHasFuel())
                     return true;
             }
-                return false;
+            return false;
         }
 
         public override void OnFixedUpdate() {

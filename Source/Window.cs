@@ -59,13 +59,10 @@ namespace MechJim {
                         new DialogGUIButton("Circularize", Circularize, false),
                         }));
             dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
-                        new DialogGUIButton("Prograde", ProgradeToggle, false),
+                        new DialogGUIButton("NodeExecute", () => { core.node.enabled = !core.node.enabled; }, false),
                         })); */
             dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
-                        new DialogGUIButton("NodeExecute", () => { core.node.enabled = !core.node.enabled; }, false),
-                        }));
-            dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
-                        new DialogGUIButton("Mission", () => { core.mission.enabled = !core.mission.enabled; }, false),
+                        new DialogGUIButton("Mission", () => { core.mission.Enable(); }, false),
                         }));
             dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
                         new DialogGUITextInput(Convert.ToString(core.steering.pitchRatePI.Kp), false, 10,
@@ -118,11 +115,6 @@ namespace MechJim {
         }
 
         void NodeExecute() {
-            core.node.enabled = !core.node.enabled;
-        }
-
-        void ProgradeToggle() {
-            core.ProgradeToggle();
         }
 
         void Circularize() {

@@ -1,3 +1,7 @@
+using UnityEngine;
+using System;
+using System.Reflection;
+
 namespace MechJim.Manager {
     public class ManagerBase {
         protected Core core;
@@ -6,29 +10,42 @@ namespace MechJim.Manager {
         protected CelestialBody mainBody { get { return core.vessel.mainBody; } }
         protected VesselState vesselState { get { return core.vesselState; } }
 
-        private bool _enabled;
-        public bool enabled {
-            get { return _enabled; }
-            set {
-                if (value != _enabled) {
-                    _enabled = value;
-                    if (_enabled) {
-                        OnEnable();
-                    } else {
-                        OnDisable();
-                    }
-                }
-            }
-        }
+        public bool enabled { get; private set; }
 
         public ManagerBase(Core core) {
             this.core = core;
             enabled = false;
         }
 
-        public virtual void OnEnable() { }
+        public void Enable() {
+            if (!enabled) {
+                foreach( EnableAttribute attr in this.GetType().GetCustomAttributes(typeof(EnableAttribute), true) ) {
+                    foreach(Type klass in attr.klasses ) {
+                        core.GetManager(klass).Enable();
+                    }
+                }
+                OnEnable();
+            }
+            Debug.Log("Enabling " + this.GetType().Name);
+            enabled = true;
+        }
 
-        public virtual void OnDisable() { }
+        public void Disable() {
+            if (enabled) {
+                foreach( EnableAttribute attr in this.GetType().GetCustomAttributes(typeof(EnableAttribute), true) ) {
+                    foreach(Type klass in attr.klasses ) {
+                        core.GetManager(klass).Disable();
+                    }
+                }
+                OnDisable();
+            }
+            Debug.Log("Disabling " + this.GetType().Name);
+            enabled = false;
+        }
+
+        protected virtual void OnEnable() { }
+
+        protected virtual void OnDisable() { }
 
         public virtual void Drive(FlightCtrlState s) {
             if (enabled)

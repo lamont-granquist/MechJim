@@ -5,6 +5,13 @@ using UnityEngine;
 
 namespace MechJim.Extensions {
     public static class OrbitExtensions {
+        public static Vector3d SwappedVelocityAtPeriapsis(this Orbit o) {
+            return o.SwappedOrbitalVelocityAtUT(o.timeToPe + Planetarium.GetUniversalTime());
+        }
+
+        public static Vector3d SwappedVelocityAtApoapsis(this Orbit o) {
+            return o.SwappedOrbitalVelocityAtUT(o.timeToAp + Planetarium.GetUniversalTime());
+        }
 
         /*
          * goofy KSP xzy swapping
