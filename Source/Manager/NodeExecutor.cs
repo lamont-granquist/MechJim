@@ -16,9 +16,10 @@ namespace MechJim.Manager {
 
         /* the longer we've been checking the more tolerant we get with exponential backoff */
         private bool CheckAngularVelocity(ref double startTime) {
-            if (startTime == double.NaN)
+            if (double.IsNaN(startTime))
                 startTime = Planetarium.GetUniversalTime();
             double epsilon = 0.001 * Math.Pow(2, Math.Max(Planetarium.GetUniversalTime() - startTime, 1));
+            Debug.Log("epsilon = " + epsilon + " startTime = " + startTime + " time = " + Planetarium.GetUniversalTime());
             return Math.Abs(vesselState.angularVelocity.x) < epsilon && Math.Abs(vesselState.angularVelocity.z) < epsilon;
         }
 

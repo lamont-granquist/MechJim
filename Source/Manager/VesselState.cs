@@ -160,6 +160,22 @@ namespace MechJim.Manager {
         }
 
         private void AnalyzeRCS() {
+            torqueRcs.Reset();
+
+            for (int i = 0; i < rcs.Count; i++) {
+                Part p = rcs[i].part;
+
+                List<ModuleRCS> mlist = p.Modules.GetModules<ModuleRCS>();
+
+                for (int m = 0; m < mlist.Count; m++) {
+                    Vector3 pos;
+                    Vector3 neg;
+                    ModuleRCS rw = mlist[m];
+                    rw.GetPotentialTorque(out pos, out neg);
+                    torqueRcs.Add(pos);
+                    torqueRcs.Add(-neg);
+                }
+            }
         }
 
         private void AnalyzeReactionWheels() {
@@ -179,7 +195,6 @@ namespace MechJim.Manager {
                     torqueReactionWheel.Add(-neg);
                 }
             }
-
         }
 
         private void AnalyzeControlSurfaces() {
@@ -220,6 +235,7 @@ namespace MechJim.Manager {
             torqueAvailable = Vector3d.zero;
 
             torqueAvailable += Vector3d.Max(torqueReactionWheel.positive, torqueReactionWheel.negative);
+            torqueAvailable += Vector3d.Max(torqueRcs.positive, torqueRcs.negative);
         }
     }
 }

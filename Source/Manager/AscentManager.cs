@@ -17,7 +17,7 @@ namespace MechJim.Manager {
         public double maxQlimit { get; set; } /* kPa */
 
         public PIDLoop pitchPID = new PIDLoop(2, 0, 0.3);
-        public PIDLoop throttlePID = new PIDLoop(.2, 0.15, 0.1);
+        public PIDLoop throttlePID = new PIDLoop(.8, 0.15, 0.1);
 
         override protected void OnDisable() {
             autofairing.Disable();
