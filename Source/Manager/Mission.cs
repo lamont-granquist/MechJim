@@ -14,8 +14,8 @@ namespace MechJim.Manager {
         public Mission(Core core): base(core) { }
 
         protected override void OnDisable() {
-            core.ascent.Disable();
-            core.node.Disable();
+            ascent.Disable();
+            node.Disable();
         }
 
         protected override void OnEnable() {
@@ -40,9 +40,9 @@ namespace MechJim.Manager {
         /* FIXME: AscentManager is only enabled for this state */
         private StateFn MissionLaunch(bool stateChanged) {
             if (stateChanged) {
-                core.ascent.Enable();
+                ascent.Enable();
             }
-            if (core.ascent.done)
+            if (ascent.done)
                 return MissionCircularize;
             return MissionLaunch;
         }
@@ -53,8 +53,8 @@ namespace MechJim.Manager {
             if (stateChanged) {
                 var maneuver = new Maneuver.Circularize(vessel, orbit, Planetarium.GetUniversalTime() + orbit.timeToAp);
                 maneuver.PlaceManeuverNode();
-                core.ascent.Disable();
-                core.node.Enable();
+                ascent.Disable();
+                node.Enable();
             }
             return MissionCircularize;
         }

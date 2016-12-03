@@ -104,15 +104,15 @@ namespace MechJim.Manager {
         /* burn to raise and maintain Ap at intermediate altitude */
         private ThrottleState ThrottleLaunch() {
             if (orbit.ApA > intermediate_altitude) {
-                core.warp.WarpAtPhysicsRate(4, true);
-                core.throttle.target = -1.0;
+                warp.WarpAtPhysicsRate(4, true);
+                throttle.target = -1.0;
                 double dV = mainBody.CircVelocityAtRadius(orbit.ApR) - orbit.SwappedVelocityAtApoapsis().magnitude;
                 targetAPtime = BurnTime(dV/2);
                 if ( adjustedTimeToAp() < targetAPtime )
                     return ThrottleState.FINAL;
             } else {
-                core.warp.WarpAtPhysicsRate(0, true);
-                core.throttle.target = 1.0;
+                warp.WarpAtPhysicsRate(0, true);
+                throttle.target = 1.0;
             }
             return ThrottleState.LAUNCH;
         }
@@ -120,11 +120,11 @@ namespace MechJim.Manager {
         /* burn to raise and maintain Ap at target altitude */
         private ThrottleState ThrottleFinal() {
             if (orbit.ApA < target_altitude) {
-                core.warp.WarpAtPhysicsRate(0, true);
-                core.throttle.target = 1.0;
+                warp.WarpAtPhysicsRate(0, true);
+                throttle.target = 1.0;
             } else {
-                core.warp.WarpAtPhysicsRate(4, true);
-                core.throttle.target = 0.0;
+                warp.WarpAtPhysicsRate(4, true);
+                throttle.target = 0.0;
                 if (vessel.altitude > mainBody.RealMaxAtmosphereAltitude())
                     return ThrottleState.EXIT;
             }
@@ -133,8 +133,8 @@ namespace MechJim.Manager {
 
         /* shut off throttle when we're done */
         private ThrottleState ThrottleExit() {
-            core.warp.MinimumWarp();
-            core.throttle.target = 0.0;
+            warp.MinimumWarp();
+            throttle.target = 0.0;
             done = true;
             return ThrottleState.EXIT;
         }
@@ -143,7 +143,7 @@ namespace MechJim.Manager {
         private AttitudeState AttitudeLaunch() {
             if ((vessel.srf_velocity.magnitude > start_speed) && (vessel.altitude > vessel.terrainAltitude + start_altitude))
                 return AttitudeState.INITIATE;
-            core.attitude.attitudeTo(90, 90, 0);
+            attitude.attitudeTo(90, 90, 0);
             return AttitudeState.LAUNCH;
         }
 
@@ -151,7 +151,7 @@ namespace MechJim.Manager {
         private AttitudeState AttitudeInitiate() {
             if (vesselState.rocketAoA > 2)
                 return AttitudeState.SETTLE;
-            core.attitude.attitudeTo(90, 90 - start_turn, 0);
+            attitude.attitudeTo(90, 90 - start_turn, 0);
             return AttitudeState.INITIATE;
         }
 
@@ -161,7 +161,7 @@ namespace MechJim.Manager {
                 pitchPID.ResetI();
                 return AttitudeState.SURFACE;
             }
-            core.attitude.attitudeTo(90, 90 - start_turn, 0);
+            attitude.attitudeTo(90, 90 - start_turn, 0);
             return AttitudeState.SETTLE;
         }
 
@@ -169,7 +169,7 @@ namespace MechJim.Manager {
         private AttitudeState AttitudeSurface() {
             if (vessel.dynamicPressurekPa < low_pressure_cutoff)  /* FIXME: should really track maxQ and make sure we're below it */
                 return AttitudeState.PROGRADE;
-            core.attitude.attitudeTo(Vector3d.forward, AttitudeReference.SURFACE_VELOCITY);
+            attitude.attitudeTo(Vector3d.forward, AttitudeReference.SURFACE_VELOCITY);
             return AttitudeState.SURFACE;
         }
 
@@ -177,8 +177,8 @@ namespace MechJim.Manager {
         private AttitudeState AttitudePrograde() {
             if (vessel.altitude > mainBody.RealMaxAtmosphereAltitude() && orbit.ApA > target_altitude )
                 return AttitudeState.EXIT;
-            double pitch = pitchPID.Update(adjustedTimeToAp(), targetAPtime, 0, 30);
-            core.attitude.attitudeTo(Quaternion.AngleAxis((float)pitch, Vector3.left) * Vector3d.forward, AttitudeReference.SURFACE_HORIZONTAL);
+            double pitch = pitchPID.Update(adjustedTimeToAp(), targetAPtime / 2, 0, 30);
+            attitude.attitudeTo(Quaternion.AngleAxis((float)pitch, Vector3.left) * Vector3d.forward, AttitudeReference.SURFACE_HORIZONTAL);
             return AttitudeState.PROGRADE;
         }
 

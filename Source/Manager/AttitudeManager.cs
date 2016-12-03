@@ -78,7 +78,7 @@ namespace MechJim.Manager {
 
         public void attitudeTo(Vector3d direction, AttitudeReference reference) {
             Vector3d up;
-            up = attitudeWorldToReference(core.vessel.ReferenceTransform.rotation * Quaternion.Euler(-90, 0, 0) * Vector3d.up, reference);
+            up = attitudeWorldToReference(vessel.ReferenceTransform.rotation * Quaternion.Euler(-90, 0, 0) * Vector3d.up, reference);
             attitudeTo(Quaternion.LookRotation(direction, up), reference);
         }
 
@@ -98,7 +98,7 @@ namespace MechJim.Manager {
                 return;
             }
 
-            core.steering.target = attitudeGetReferenceRotation(reference) * attitude;
+            steering.target = attitudeGetReferenceRotation(reference) * attitude;
         }
 
         /*

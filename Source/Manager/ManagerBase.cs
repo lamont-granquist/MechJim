@@ -12,6 +12,17 @@ namespace MechJim.Manager {
 
         public bool enabled { get; private set; }
 
+        protected T GetManager<T>() where T: ManagerBase { return core.GetManager<T>(); }
+        protected ThrottleManager throttle { get { return core.GetManager<ThrottleManager>(); } }
+        protected AttitudeManager attitude { get { return core.GetManager<AttitudeManager>(); } }
+        protected AscentManager ascent { get { return core.GetManager<AscentManager>(); } }
+        protected AutoFairing autofairing { get { return core.GetManager<AutoFairing>(); } }
+        protected AutoPanel autopanel { get { return core.GetManager<AutoPanel>(); } }
+        protected AutoStage autostage { get { return core.GetManager<AutoStage>(); } }
+        protected NodeExecutor node { get { return core.GetManager<NodeExecutor>(); } }
+        protected SteeringManager steering { get { return core.GetManager<SteeringManager>(); } }
+        protected WarpManager warp { get { return core.GetManager<WarpManager>(); } }
+
         public ManagerBase(Core core) {
             this.core = core;
             enabled = false;

@@ -11,17 +11,7 @@ namespace MechJim {
             public Window window;
             public Toolbar toolbar;
             public Vessel vessel;
-            public SteeringManager steering { get { return (SteeringManager) GetManager<SteeringManager>(); } }
-            public AttitudeManager attitude { get { return (AttitudeManager) GetManager<AttitudeManager>(); } }
-            public ThrottleManager throttle { get { return (ThrottleManager) GetManager<ThrottleManager>(); } }
-            public AscentManager ascent { get { return (AscentManager) GetManager<AscentManager>(); } }
-            public WarpManager warp { get { return (WarpManager) GetManager<WarpManager>(); } }
-            public NodeExecutor node { get { return (NodeExecutor) GetManager<NodeExecutor>(); } }
             public VesselState vesselState { get { return (VesselState) GetManager<VesselState>(); } }
-            public AutoPanel autopanel { get { return (AutoPanel) GetManager<AutoPanel>(); } }
-            public AutoStage autostage { get { return (AutoStage) GetManager<AutoStage>(); } }
-            public AutoFairing autofairing { get { return (AutoFairing) GetManager<AutoFairing>(); } }
-            public Mission mission { get { return (Mission) GetManager<Mission>(); } }
 
             /* constructor - prefer using awake()/start() */
             public Core() { }
@@ -47,8 +37,8 @@ namespace MechJim {
                 return managerDict[t];
             }
 
-            public ManagerBase GetManager<T>() where T: ManagerBase {
-                return managerDict[typeof(T)];
+            public T GetManager<T>() where T: ManagerBase {
+                return (T)managerDict[typeof(T)];
             }
 
             public object InvokeManager<T>(string method, object[] parameters) where T: ManagerBase {
@@ -87,15 +77,15 @@ namespace MechJim {
                 GetManager<VesselState>().Enable();
                 GetManager<VesselState>().FixedUpdate();
 
-                mission.FixedUpdate();
+                GetManager<Mission>().FixedUpdate();
 
-                ascent.FixedUpdate();
+                GetManager<AscentManager>().FixedUpdate();
 
-                autopanel.FixedUpdate();
-                autofairing.FixedUpdate();
-                autostage.FixedUpdate();
+                GetManager<AutoPanel>().FixedUpdate();
+                GetManager<AutoFairing>().FixedUpdate();
+                GetManager<AutoStage>().FixedUpdate();
 
-                node.FixedUpdate();
+                GetManager<NodeExecutor>().FixedUpdate();
             }
 
             /* leaving scene */
@@ -107,9 +97,9 @@ namespace MechJim {
             /* FlyByWire callback */
             private void Drive(FlightCtrlState s) {
                 vessel = FlightGlobals.ActiveVessel;
-                throttle.Drive(s);
-                attitude.Drive(s); /* before steering */
-                steering.Drive(s);
+                GetManager<ThrottleManager>().Drive(s);
+                GetManager<AttitudeManager>().Drive(s); /* before steering */
+                GetManager<SteeringManager>().Drive(s);
                 CheckFlightCtrlState(s);
             }
 
