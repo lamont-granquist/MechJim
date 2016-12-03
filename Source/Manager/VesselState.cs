@@ -2,14 +2,19 @@ using System;
 using UnityEngine;
 using MechJim.PartWrapper;
 using MechJim.Extensions;
+using System.Collections.Generic;
 
 namespace MechJim.Manager {
     public class VesselState: ManagerBase {
         public VesselState(Core core): base(core) { }
 
-        public PartWrapperList<EngineWrapper> engines = new PartWrapperList<EngineWrapper>();
-        public PartWrapperList<FairingWrapper> fairings = new PartWrapperList<FairingWrapper>();
-        public PartWrapperList<SolarPanelWrapper> solarpanels = new PartWrapperList<SolarPanelWrapper>();
+        public PartWrapperList<EngineWrapper>         engines = new PartWrapperList<EngineWrapper>();
+        public PartWrapperList<SolarPanelWrapper>     solarpanels = new PartWrapperList<SolarPanelWrapper>();
+        public PartWrapperList<FairingWrapper>        fairings = new PartWrapperList<FairingWrapper>();
+        public PartWrapperList<ReactionWheelWrapper>  reactionWheels = new PartWrapperList<ReactionWheelWrapper>();
+        public PartWrapperList<RCSWrapper>            rcs = new PartWrapperList<RCSWrapper>();
+        public PartWrapperList<ControlSurfaceWrapper> controlSurface = new PartWrapperList<ControlSurfaceWrapper>();
+        public PartWrapperList<OtherTorqueWrapper>    otherTorque = new PartWrapperList<OtherTorqueWrapper>();
 
         public double mass { get { return vessel.totalMass; } }
         public double time { get { return Planetarium.GetUniversalTime(); } }
@@ -51,16 +56,136 @@ namespace MechJim.Manager {
 
         public double totalVe;
 
+        // Total torque
+        public Vector3 torqueAvailable;
+
+        // Torque from different components
+        public Vector6 torqueReactionWheel  = new Vector6(); // torque available from Reaction wheels
+        public Vector6 torqueRcs            = new Vector6(); // torque available from RCS from stock code (not working properly ATM)
+        public Vector6 torqueControlSurface = new Vector6(); // torque available from Aerodynamic control surfaces
+        public Vector6 torqueGimbal         = new Vector6(); // torque available from Gimbaled engines
+        public Vector6 torqueOthers         = new Vector6(); // torque available from Mostly FAR
+
         public void StartMark() {
             engines.StartMark();
-            fairings.StartMark();
             solarpanels.StartMark();
+            fairings.StartMark();
+            reactionWheels.StartMark();
+            rcs.StartMark();
+            controlSurface.StartMark();
+            otherTorque.StartMark();
         }
 
         public void Sweep() {
             engines.Sweep();
-            fairings.Sweep();
             solarpanels.Sweep();
+            fairings.Sweep();
+            reactionWheels.Sweep();
+            rcs.Sweep();
+            controlSurface.Sweep();
+            otherTorque.Sweep();
+        }
+
+        private void WrapParts() {
+            StartMark();
+
+            /* FIXME: make betterer vessel simulation */
+            for (int i = 0; i < vessel.parts.Count; i++) {
+                Part p = vessel.parts[i];
+
+                if (p.IsEngine())
+                    engines.AddPart(p);
+                if (p.IsSolarPanel())
+                    solarpanels.AddPart(p);
+                if (p.IsFairing())
+                    fairings.AddPart(p);
+                if (p.IsReactionWheel())
+                    reactionWheels.AddPart(p);
+                if (p.IsRCS())
+                    rcs.AddPart(p);
+                if (p.IsControlSurface())
+                    controlSurface.AddPart(p);
+                if (p.IsControlSurface())
+                    controlSurface.AddPart(p);
+                if (p.IsOtherTorque())
+                    otherTorque.AddPart(p);
+            }
+
+            Sweep();
+        }
+
+        private void AnalyzeEngines() {
+            double thrustOverVe = 0.0;
+
+
+            for (int i = 0; i < engines.Count; i++) {
+                Part p = engines[i].part;
+
+                List<ModuleEngines> elist = p.Modules.GetModules<ModuleEngines>();
+
+                for (int m = 0; m < elist.Count; m++) {
+                    ModuleEngines e = elist[m];
+                    if ((!e.EngineIgnited) || (!e.isEnabled)) {
+                        continue;
+                    }
+                    float thrustLimiter = e.thrustPercentage / 100f;
+
+                    double Isp0 = e.atmosphereCurve.Evaluate((float)atmPressure);
+                    double Isp1 = e.atmosphereCurve.Evaluate((float)atmPressure1);
+                    double Isp = Math.Min(Isp0, Isp1);
+                    double Ve = Isp * e.g;
+
+                    double maxThrust = e.maxFuelFlow * e.flowMultiplier * Ve;
+                    double minThrust = e.minFuelFlow * e.flowMultiplier * Ve;
+
+                    /* handle RealFuels engines */
+                    if (e.finalThrust == 0.0f && minThrust > 0.0f)
+                        minThrust = maxThrust = 0.0;
+
+                    double eMaxThrust = minThrust + (maxThrust - minThrust) * thrustLimiter;
+                    double eMinThrust = e.throttleLocked ? eMaxThrust : minThrust;
+                    double eCurrentThrust = e.finalThrust;
+
+                    thrustMaximum += eMaxThrust;
+                    thrustMinimum += eMinThrust;
+                    thrustCurrent += eCurrentThrust;
+
+                    thrustOverVe += eMaxThrust / Ve;
+
+                    /* FIXME: Cosine losses */
+                }
+            }
+
+            totalVe = thrustMaximum / thrustOverVe;
+        }
+
+        private void AnalyzeRCS() {
+        }
+
+        private void AnalyzeReactionWheels() {
+            torqueReactionWheel.Reset();
+
+            for (int i = 0; i < reactionWheels.Count; i++) {
+                Part p = reactionWheels[i].part;
+
+                List<ModuleReactionWheel> mlist = p.Modules.GetModules<ModuleReactionWheel>();
+
+                for (int m = 0; m < mlist.Count; m++) {
+                    Vector3 pos;
+                    Vector3 neg;
+                    ModuleReactionWheel rw = mlist[m];
+                    rw.GetPotentialTorque(out pos, out neg);
+                    torqueReactionWheel.Add(pos);
+                    torqueReactionWheel.Add(-neg);
+                }
+            }
+
+        }
+
+        private void AnalyzeControlSurfaces() {
+        }
+
+        private void AnalyzeOtherTorque() {
         }
 
         public override void OnFixedUpdate() {
@@ -84,63 +209,17 @@ namespace MechJim.Manager {
 
             thrustMaximum = thrustMinimum = thrustCurrent = 0.0;
 
-            double thrustOverVe = 0.0;
+            WrapParts();
 
-            StartMark();
+            AnalyzeEngines();
+            AnalyzeRCS();
+            AnalyzeReactionWheels();
+            AnalyzeControlSurfaces();
+            AnalyzeOtherTorque();
 
-            /* FIXME: make betterer vessel simulation */
-            for (int i = 0; i < vessel.parts.Count; i++) {
-                Part p = vessel.parts[i];
+            torqueAvailable = Vector3d.zero;
 
-                if (p.IsEngine())
-                    engines.AddPart(p);
-                if (p.IsSolarPanel())
-                    solarpanels.AddPart(p);
-                if (p.IsFairing())
-                    fairings.AddPart(p);
-
-                for (int m = 0; m < p.Modules.Count; m++) {
-                    PartModule pm = p.Modules[m];
-                    if (!pm.isEnabled)
-                        continue;
-
-                    if (pm is ModuleEngines) {
-                        var e = pm as ModuleEngines;
-                        if ((!e.EngineIgnited) || (!e.isEnabled)) {
-                            continue;
-                        }
-                        float thrustLimiter = e.thrustPercentage / 100f;
-
-                        double Isp0 = e.atmosphereCurve.Evaluate((float)atmPressure);
-                        double Isp1 = e.atmosphereCurve.Evaluate((float)atmPressure1);
-                        double Isp = Math.Min(Isp0, Isp1);
-                        double Ve = Isp * e.g;
-
-                        double maxThrust = e.maxFuelFlow * e.flowMultiplier * Ve;
-                        double minThrust = e.minFuelFlow * e.flowMultiplier * Ve;
-
-                        /* handle RealFuels engines */
-                        if (e.finalThrust == 0.0f && minThrust > 0.0f)
-                            minThrust = maxThrust = 0.0;
-
-                        double eMaxThrust = minThrust + (maxThrust - minThrust) * thrustLimiter;
-                        double eMinThrust = e.throttleLocked ? eMaxThrust : minThrust;
-                        double eCurrentThrust = e.finalThrust;
-
-                        thrustMaximum += eMaxThrust;
-                        thrustMinimum += eMinThrust;
-                        thrustCurrent += eCurrentThrust;
-
-                        thrustOverVe += eMaxThrust / Ve;
-
-                        /* FIXME: Cosine losses */
-                    }
-                }
-            }
-
-            Sweep();
-
-            totalVe = thrustMaximum / thrustOverVe;
+            torqueAvailable += Vector3d.Max(torqueReactionWheel.positive, torqueReactionWheel.negative);
         }
     }
 }

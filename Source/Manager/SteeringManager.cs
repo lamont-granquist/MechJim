@@ -37,8 +37,7 @@ namespace MechJim.Manager {
         /* max angular rotation */
         private Vector3d MaxOmega = Vector3d.zero;
 
-        /* FIXME */
-        private Vector3d ControlTorque = new Vector3d( 20, 20, 20 );
+        private Vector3d ControlTorque { get { return vesselState.torqueAvailable; } }
 
         public SteeringManager(Core core): base(core) {
             MaxStoppingTime = 2;
