@@ -14,9 +14,14 @@ namespace MechJim.Manager {
         public double start_speed { get; set; }
         public double start_altitude { get; set; }
         public double start_turn { get; set; }
-        public double low_pressure_cutoff { get; set; } /* kPa */
+        public double maxQlimit { get; set; } /* kPa */
 
-        public PIDLoop pitchPID = new PIDLoop(2, 0.4, 0, extraUnwind: true);
+        public PIDLoop pitchPID = new PIDLoop(2, 0, 0.3);
+        public PIDLoop throttlePID = new PIDLoop(.2, 0.15, 0.1);
+
+        protected void OnDisable() {
+            autofairing.Disable();
+        }
 
         public enum ThrottleState {
             LAUNCH,
@@ -57,11 +62,11 @@ namespace MechJim.Manager {
                 { AttitudeState.EXIT, AttitudeExit },
             };
             target_altitude = 100000;
-            intermediate_altitude = 45000;
+            intermediate_altitude = 55000;
             start_altitude = 50;
             start_speed = 50;
             start_turn = 18;
-            low_pressure_cutoff = 1.0;
+            maxQlimit = 40;
             done = false;
         }
 
@@ -73,6 +78,12 @@ namespace MechJim.Manager {
         }
 
         public override void OnFixedUpdate() {
+            /* update targetAPtime */
+            double dV = mainBody.CircVelocityAtRadius(orbit.ApR) - orbit.SwappedVelocityAtApoapsis().magnitude;
+            targetAPtime = BurnTime(dV/2);
+            if (orbit.ApA > target_altitude)
+                autofairing.Enable();
+
             ThrottleState lastThrottleState = throttleState;
             AttitudeState lastAttitudeState = attitudeState;
 
@@ -101,18 +112,22 @@ namespace MechJim.Manager {
             return burntime;
         }
 
+        /*
+         * Throttle State Machine
+         */
+
         /* burn to raise and maintain Ap at intermediate altitude */
         private ThrottleState ThrottleLaunch() {
             if (orbit.ApA > intermediate_altitude) {
                 warp.WarpAtPhysicsRate(4, true);
-                throttle.target = -1.0;
-                double dV = mainBody.CircVelocityAtRadius(orbit.ApR) - orbit.SwappedVelocityAtApoapsis().magnitude;
-                targetAPtime = BurnTime(dV/2);
+                throttle.target = 0.0;
                 if ( adjustedTimeToAp() < targetAPtime )
                     return ThrottleState.FINAL;
             } else {
                 warp.WarpAtPhysicsRate(0, true);
-                throttle.target = 1.0;
+                if (vessel.dynamicPressurekPa < maxQlimit)
+                    throttlePID.ResetI();
+                throttle.target = throttlePID.Update(vessel.dynamicPressurekPa, maxQlimit, 0, 1);
             }
             return ThrottleState.LAUNCH;
         }
@@ -121,7 +136,10 @@ namespace MechJim.Manager {
         private ThrottleState ThrottleFinal() {
             if (orbit.ApA < target_altitude) {
                 warp.WarpAtPhysicsRate(0, true);
-                throttle.target = 1.0;
+                if (orbit.ApA > target_altitude * 0.95)
+                    throttle.target = 0.1;
+                else
+                    throttle.target = 1.0;
             } else {
                 warp.WarpAtPhysicsRate(4, true);
                 throttle.target = 0.0;
@@ -138,6 +156,10 @@ namespace MechJim.Manager {
             done = true;
             return ThrottleState.EXIT;
         }
+
+        /*
+         * Attitude State Machine
+         */
 
         /* straight up */
         private AttitudeState AttitudeLaunch() {
@@ -158,7 +180,6 @@ namespace MechJim.Manager {
         /* wait for settling */
         private AttitudeState AttitudeSettle() {
             if (vesselState.rocketAoA < 1) {
-                pitchPID.ResetI();
                 return AttitudeState.SURFACE;
             }
             attitude.attitudeTo(90, 90 - start_turn, 0);
@@ -167,7 +188,7 @@ namespace MechJim.Manager {
 
         /* track surface vector (zero AoA) until Q drops off */
         private AttitudeState AttitudeSurface() {
-            if (vessel.dynamicPressurekPa < low_pressure_cutoff)  /* FIXME: should really track maxQ and make sure we're below it */
+            if ((orbit.ApA > 0.95 * intermediate_altitude) && ( adjustedTimeToAp() < targetAPtime + 5 ))
                 return AttitudeState.PROGRADE;
             attitude.attitudeTo(Vector3d.forward, AttitudeReference.SURFACE_VELOCITY);
             return AttitudeState.SURFACE;
@@ -177,7 +198,7 @@ namespace MechJim.Manager {
         private AttitudeState AttitudePrograde() {
             if (vessel.altitude > mainBody.RealMaxAtmosphereAltitude() && orbit.ApA > target_altitude )
                 return AttitudeState.EXIT;
-            double pitch = pitchPID.Update(adjustedTimeToAp(), targetAPtime / 2, 0, 30);
+            double pitch = pitchPID.Update(adjustedTimeToAp(), 0, 0, 30);
             attitude.attitudeTo(Quaternion.AngleAxis((float)pitch, Vector3.left) * Vector3d.forward, AttitudeReference.SURFACE_HORIZONTAL);
             return AttitudeState.PROGRADE;
         }

@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace MechJim.Manager {
 
-    [Enable(typeof(AutoPanel), typeof(AutoStage), typeof(AutoFairing))]
+    [Enable(typeof(AutoPanel), typeof(AutoStage))]
     public class Mission: ManagerBase {
         public delegate StateFn StateFn(bool f);
 
