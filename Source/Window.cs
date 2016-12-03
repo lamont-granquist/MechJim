@@ -9,10 +9,12 @@ namespace MechJim {
         private PopupDialog window;
         private Core core;
 
+        /*
         private double ellip_PeA;
         private double ellip_ApA;
         private double periap_PeA;
         private double apoap_ApA;
+        */
 
         public Window(Core core) {
             this.core = core;
@@ -118,6 +120,7 @@ namespace MechJim {
         void NodeExecute() {
         }
 
+        /*
         void Circularize() {
             var maneuver = new Maneuver.Circularize(FlightGlobals.ActiveVessel, FlightGlobals.ActiveVessel.orbit, Planetarium.GetUniversalTime());
             maneuver.PlaceManeuverNode();
@@ -137,6 +140,7 @@ namespace MechJim {
             var maneuver = new Maneuver.Apoapsis(FlightGlobals.ActiveVessel, FlightGlobals.ActiveVessel.orbit, Planetarium.GetUniversalTime(), apoap_ApA);
             maneuver.PlaceManeuverNode();
         }
+        */
 
         public void DismissWindow() {
             if (window != null)

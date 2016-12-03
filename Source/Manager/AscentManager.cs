@@ -19,7 +19,7 @@ namespace MechJim.Manager {
         public PIDLoop pitchPID = new PIDLoop(2, 0, 0.3);
         public PIDLoop throttlePID = new PIDLoop(.2, 0.15, 0.1);
 
-        protected void OnDisable() {
+        override protected void OnDisable() {
             autofairing.Disable();
         }
 

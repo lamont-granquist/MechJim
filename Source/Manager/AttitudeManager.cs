@@ -20,7 +20,7 @@ namespace MechJim.Manager {
 
     [Enable(typeof(SteeringManager))]
     public class AttitudeManager: ManagerBase {
-        private Quaternion attitude;
+        private Quaternion attitude; /* FIXME: the data hiding warning, but it doesn't matter */
         private AttitudeReference reference;
 
         public AttitudeManager(Core core) : base(core) { }

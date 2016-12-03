@@ -14,6 +14,14 @@ namespace MechJim.Manager {
             seeking = true; /* get good lock before starting burn */
         }
 
+        /* the longer we've been checking the more tolerant we get with exponential backoff */
+        private bool CheckAngularVelocity(ref double startTime) {
+            if (startTime == double.NaN)
+                startTime = Planetarium.GetUniversalTime();
+            double epsilon = 0.001 * Math.Pow(2, Math.Max(Planetarium.GetUniversalTime() - startTime, 1));
+            return Math.Abs(vesselState.angularVelocity.x) < epsilon && Math.Abs(vesselState.angularVelocity.z) < epsilon;
+        }
+
         public override void OnFixedUpdate() {
             throttle.target = 0.0;
 
@@ -35,15 +43,17 @@ namespace MechJim.Manager {
 
             attitude.attitudeTo(Vector3d.forward, AttitudeReference.MANEUVER_NODE);
             double BurnUT = node.UT - BurnTime(dVLeft) / 2.0;
+            double checkOneStart = double.NaN;
+            double checkTwoStart = double.NaN;
 
             if ( vesselState.time < ( BurnUT - 300 ) ) {
                 /* way before the burn */
-                if ( attitude.AngleFromTarget() < 1 && Math.Abs(vesselState.angularVelocity.x) < 0.001 && Math.Abs(vesselState.angularVelocity.z) < 0.001 )
+                if ( attitude.AngleFromTarget() < 1 && CheckAngularVelocity(ref checkOneStart))
                     warp.WarpToUT(BurnUT - leadTime);
 
             } else if ( vesselState.time < ( BurnUT - leadTime ) ) {
                 /* before the burn */
-                if ( attitude.AngleFromTarget() < 1 && Math.Abs(vesselState.angularVelocity.x) < 0.001 && Math.Abs(vesselState.angularVelocity.z) < 0.001 )
+                if ( attitude.AngleFromTarget() < 1 && CheckAngularVelocity(ref checkTwoStart))
                     warp.WarpToUT(BurnUT - leadTime);
                 if ( attitude.AngleFromTarget() > 5 )
                     warp.MinimumWarp();

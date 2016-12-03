@@ -44,7 +44,7 @@ namespace MechJim.PartWrapper {
             }
         }
 
-        public string ToString() {
+        override public string ToString() {
             List<string> strings = new List<string>();
 
             for (int i = 0; i < Count; i++) {

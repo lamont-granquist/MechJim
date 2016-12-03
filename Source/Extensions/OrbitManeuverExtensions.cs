@@ -211,7 +211,7 @@ namespace MechJim.Extensions {
             CelestialBody moon = o.referenceBody;
             CelestialBody primary = moon.referenceBody;
 
-            Orbit primaryOrbit = new Orbit(moon.orbit.inclination, moon.orbit.eccentricity, targetPrimaryRadius, moon.orbit.LAN, moon.orbit.argumentOfPeriapsis, moon.orbit.meanAnomalyAtEpoch, moon.orbit.epoch, primary);
+            /* Orbit primaryOrbit = new Orbit(moon.orbit.inclination, moon.orbit.eccentricity, targetPrimaryRadius, moon.orbit.LAN, moon.orbit.argumentOfPeriapsis, moon.orbit.meanAnomalyAtEpoch, moon.orbit.epoch, primary); */
 
             /* FIXME: needs Transfer Injections + Lambert Solver */
             burnUT = Planetarium.GetUniversalTime();
