@@ -13,7 +13,7 @@ namespace MechJim.Manager {
         public PartWrapperList<FairingWrapper>        fairings = new PartWrapperList<FairingWrapper>();
         public PartWrapperList<ReactionWheelWrapper>  reactionWheels = new PartWrapperList<ReactionWheelWrapper>();
         public PartWrapperList<RCSWrapper>            rcs = new PartWrapperList<RCSWrapper>();
-        public PartWrapperList<ControlSurfaceWrapper> controlSurface = new PartWrapperList<ControlSurfaceWrapper>();
+        public PartWrapperList<ControlSurfaceWrapper> controlSurfaces = new PartWrapperList<ControlSurfaceWrapper>();
         public PartWrapperList<OtherTorqueWrapper>    otherTorque = new PartWrapperList<OtherTorqueWrapper>();
 
         public double mass { get { return vessel.totalMass; } }
@@ -72,7 +72,7 @@ namespace MechJim.Manager {
             fairings.StartMark();
             reactionWheels.StartMark();
             rcs.StartMark();
-            controlSurface.StartMark();
+            controlSurfaces.StartMark();
             otherTorque.StartMark();
         }
 
@@ -82,7 +82,7 @@ namespace MechJim.Manager {
             fairings.Sweep();
             reactionWheels.Sweep();
             rcs.Sweep();
-            controlSurface.Sweep();
+            controlSurfaces.Sweep();
             otherTorque.Sweep();
         }
 
@@ -104,9 +104,7 @@ namespace MechJim.Manager {
                 if (p.IsRCS())
                     rcs.AddPart(p);
                 if (p.IsControlSurface())
-                    controlSurface.AddPart(p);
-                if (p.IsControlSurface())
-                    controlSurface.AddPart(p);
+                    controlSurfaces.AddPart(p);
                 if (p.IsOtherTorque())
                     otherTorque.AddPart(p);
             }
@@ -115,11 +113,22 @@ namespace MechJim.Manager {
         }
 
         private void AnalyzeEngines() {
-            double thrustOverVe = 0.0;
+            torqueGimbal.Reset();
 
+            double thrustOverVe = 0.0;
 
             for (int i = 0; i < engines.Count; i++) {
                 Part p = engines[i].part;
+
+                List<ModuleGimbal> glist = p.Modules.GetModules<ModuleGimbal>();
+                for (int m = 0; m < glist.Count; m++) {
+                    Vector3 pos;
+                    Vector3 neg;
+                    ModuleGimbal g = glist[m];
+                    g.GetPotentialTorque(out pos, out neg);
+                    torqueRcs.Add(pos);
+                    torqueRcs.Add(-neg);
+                }
 
                 List<ModuleEngines> elist = p.Modules.GetModules<ModuleEngines>();
 
@@ -198,6 +207,22 @@ namespace MechJim.Manager {
         }
 
         private void AnalyzeControlSurfaces() {
+            torqueControlSurface.Reset();
+
+            for (int i = 0; i < controlSurfaces.Count; i++) {
+                Part p = controlSurfaces[i].part;
+
+                List<ModuleControlSurface> mlist = p.Modules.GetModules<ModuleControlSurface>();
+
+                for (int m = 0; m < mlist.Count; m++) {
+                    Vector3 pos;
+                    Vector3 neg;
+                    ModuleControlSurface cs = mlist[m];
+                    cs.GetPotentialTorque(out pos, out neg);
+                    torqueReactionWheel.Add(pos);
+                    torqueReactionWheel.Add(-neg);
+                }
+            }
         }
 
         private void AnalyzeOtherTorque() {
@@ -251,9 +276,11 @@ namespace MechJim.Manager {
 
             torqueAvailable = Vector3d.zero;
 
+            torqueAvailable += Vector3d.Max(torqueGimbal.positive, torqueGimbal.negative);
             torqueAvailable += Vector3d.Max(torqueReactionWheel.positive, torqueReactionWheel.negative);
             torqueAvailable += Vector3d.Max(torqueRcs.positive, torqueRcs.negative);
             torqueAvailable += Vector3d.Max(torqueOthers.positive, torqueOthers.negative);
+            torqueAvailable += Vector3d.Max(torqueControlSurface.positive, torqueControlSurface.negative);
         }
     }
 }
