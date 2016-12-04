@@ -19,4 +19,5 @@ Zero Searching:
 
 - Powell's method: https://en.wikipedia.org/wiki/Powell's_method
 - Coordinate Descent: https://en.wikipedia.org/wiki/Coordinate_descent
+- Pattern search: https://en.wikipedia.org/wiki/Pattern_search_(optimization)
 

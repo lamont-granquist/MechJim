@@ -201,6 +201,23 @@ namespace MechJim.Manager {
         }
 
         private void AnalyzeOtherTorque() {
+            torqueOthers.Reset();
+
+            /* this is a special list of ITorqueProvider-containing Parts that are *NOT* Engines, RW, RCS, Control Surfaces */
+            for (int i = 0; i < otherTorque.Count; i++) {
+                Part p = otherTorque[i].part;
+
+                List<ITorqueProvider> mlist = p.Modules.GetModules<ITorqueProvider>();
+
+                for (int m = 0; m < mlist.Count; m++) {
+                    Vector3 pos;
+                    Vector3 neg;
+                    ITorqueProvider it = mlist[m];
+                    it.GetPotentialTorque(out pos, out neg);
+                    torqueOthers.Add(pos);
+                    torqueOthers.Add(-neg);
+                }
+            }
         }
 
         public override void OnFixedUpdate() {
@@ -236,6 +253,7 @@ namespace MechJim.Manager {
 
             torqueAvailable += Vector3d.Max(torqueReactionWheel.positive, torqueReactionWheel.negative);
             torqueAvailable += Vector3d.Max(torqueRcs.positive, torqueRcs.negative);
+            torqueAvailable += Vector3d.Max(torqueOthers.positive, torqueOthers.negative);
         }
     }
 }

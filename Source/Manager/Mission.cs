@@ -40,6 +40,12 @@ namespace MechJim.Manager {
         /* FIXME: AscentManager is only enabled for this state */
         private StateFn MissionLaunch(bool stateChanged) {
             if (stateChanged) {
+                /* int_alt: 65653.6212357011 start_alt: 31.1377950716474 start_turn: 19.4863715448819 maxQ: 29.2071798789348 */
+                ascent.intermediate_altitude = 65653.6212357011;
+                ascent.start_speed = 0;
+                ascent.start_altitude = 31.1377950716474;
+                ascent.start_turn = 19.4863715448819;
+                ascent.maxQlimit = 29.2071798789348;
                 ascent.Enable();
             }
             if (ascent.done)
