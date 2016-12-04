@@ -10,7 +10,12 @@ namespace MechJim.Manager {
         public double leadTime = 3.0;
         private bool seeking;
 
+        private double checkOneStart;
+        private double checkTwoStart;
+
         protected override void OnEnable() {
+            checkOneStart = double.NaN;
+            checkTwoStart = double.NaN;
             seeking = true; /* get good lock before starting burn */
         }
 
@@ -18,8 +23,8 @@ namespace MechJim.Manager {
         private bool CheckAngularVelocity(ref double startTime) {
             if (double.IsNaN(startTime))
                 startTime = Planetarium.GetUniversalTime();
-            double epsilon = 0.001 * Math.Pow(2, Math.Max(Planetarium.GetUniversalTime() - startTime, 1));
-            Debug.Log("epsilon = " + epsilon + " startTime = " + startTime + " time = " + Planetarium.GetUniversalTime());
+            /* wait 4 seconds to settle before starting exponential backoff */
+            double epsilon = 0.001 * Math.Pow(2, Math.Max(0, Planetarium.GetUniversalTime() - startTime - 4));
             return Math.Abs(vesselState.angularVelocity.x) < epsilon && Math.Abs(vesselState.angularVelocity.z) < epsilon;
         }
 
@@ -44,14 +49,11 @@ namespace MechJim.Manager {
 
             attitude.attitudeTo(Vector3d.forward, AttitudeReference.MANEUVER_NODE);
             double BurnUT = node.UT - BurnTime(dVLeft) / 2.0;
-            double checkOneStart = double.NaN;
-            double checkTwoStart = double.NaN;
 
             if ( vesselState.time < ( BurnUT - 300 ) ) {
                 /* way before the burn */
                 if ( attitude.AngleFromTarget() < 1 && CheckAngularVelocity(ref checkOneStart))
                     warp.WarpToUT(BurnUT - leadTime);
-
             } else if ( vesselState.time < ( BurnUT - leadTime ) ) {
                 /* before the burn */
                 if ( attitude.AngleFromTarget() < 1 && CheckAngularVelocity(ref checkTwoStart))
@@ -71,7 +73,6 @@ namespace MechJim.Manager {
                 } else if ( attitude.AngleFromTarget() < 1 || !seeking ) {
                     double thrustToMass = vesselState.thrustMaximum / vesselState.mass;
                     throttle.target = Utils.Clamp(dVLeft / thrustToMass / 2.0, 0.01, 1.0);
-                    Debug.Log("throttle.target = " + throttle.target);
                     seeking = false;
                 }
             }

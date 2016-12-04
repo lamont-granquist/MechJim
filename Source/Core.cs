@@ -14,7 +14,9 @@ namespace MechJim {
             public VesselState vesselState { get { return (VesselState) GetManager<VesselState>(); } }
 
             /* constructor - prefer using awake()/start() */
-            public Core() { }
+            public Core() {
+                Debug.Log("allocated new Core() object");
+            }
 
             public List<Type> managerClasses = new List<Type>();
             public Dictionary<Type,ManagerBase> managerDict = new Dictionary<Type,ManagerBase>();
@@ -25,9 +27,11 @@ namespace MechJim {
                 foreach (var asm in AppDomain.CurrentDomain.GetAssemblies()) {
                     foreach (var type in asm.GetTypes()) {
                         if (type.IsSubclassOf(typeof(ManagerBase))) {
-                            ConstructorInfo constructorInfo = type.GetConstructor(new[] { typeof(Core) });
-                            managerClasses.Add(type);
-                            managerDict.Add(type, (ManagerBase)(constructorInfo.Invoke(new object[] { this })));
+                            if (!managerDict.ContainsKey(type)) {
+                                ConstructorInfo constructorInfo = type.GetConstructor(new[] { typeof(Core) });
+                                managerClasses.Add(type);
+                                managerDict.Add(type, (ManagerBase)(constructorInfo.Invoke(new object[] { this })));
+                            }
                         }
                     }
                 }
@@ -49,18 +53,22 @@ namespace MechJim {
 
             /* entering scene */
             void Awake() {
+                GameEvents.onCrash.Add(Crash);
+                GameEvents.onCrashSplashdown.Add(CrashSplashdown);
+
                 toolbar = Toolbar.Instance;
                 toolbar.core = this;
                 toolbar.Awake();
                 window = new Window(this);
 
                 LoadManagers();
-                GetManager<VesselState>().Enable();
             }
 
             /* starting */
             void Start() {
                 window.Start();
+                GetManager<VesselState>().Enable();
+                GetManager<Mission>().Enable();
             }
 
             /* every frame */
@@ -120,6 +128,14 @@ namespace MechJim {
                 s.X = Mathf.Clamp(s.X, -1, 1);
                 s.Y = Mathf.Clamp(s.Y, -1, 1);
                 s.Z = Mathf.Clamp(s.Z, -1, 1);
+            }
+
+            void Crash(EventReport data) {
+                GetManager<Mission>().Crash(data);
+            }
+
+            void CrashSplashdown(EventReport data) {
+                GetManager<Mission>().CrashSplashdown(data);
             }
         }
 }

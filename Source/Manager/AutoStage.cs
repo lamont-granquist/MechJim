@@ -20,14 +20,19 @@ namespace MechJim.Manager {
 
         public override void OnFixedUpdate() {
             /* FIXME: copy MJs logic that walks the parts tree and makes sure not to drop firing engines or draining tanks */
+            if (!StageManager.CanSeparate)
+                return;
+
             if (StageManager.CurrentStage <= maxstage)
                 return;
 
             if (vesselState.thrustMaximum == 0.0) {
+                Debug.Log("activating next stage");
                 StageManager.ActivateNextStage();
             }
 
             if (FlamedOutEngines()) {
+                Debug.Log("activating next stage");
                 StageManager.ActivateNextStage();
             }
         }

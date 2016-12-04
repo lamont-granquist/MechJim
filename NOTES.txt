@@ -6,3 +6,17 @@ Lambert Solvers:
 - Universal Variables (http://ccar.colorado.edu/asen5050/projects/projects_2013/Sullivan_Jake/methods.html)
 - Battin-Vaughan
 - Avanzini's Method
+
+Zero Searching:
+
+- Brent's method / Brent-Dekker method:  https://en.wikipedia.org/wiki/Brent%27s_method
+
+1-D derivative-free Minimization:
+
+- Bisection???
+
+2-D derivative-free Minimization:
+
+- Powell's method: https://en.wikipedia.org/wiki/Powell's_method
+- Coordinate Descent: https://en.wikipedia.org/wiki/Coordinate_descent
+

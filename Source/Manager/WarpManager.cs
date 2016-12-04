@@ -27,6 +27,7 @@ namespace MechJim.Manager {
             else
                 SetPhysicsMode();
 
+            /* why is TimeWarp.CurrentRateIndex in the next line and not TimeWarp.CurrentRate? */
             double desiredRate = UT - vesselState.time + Time.fixedDeltaTime * TimeWarp.CurrentRateIndex;
             desiredRate = Utils.Clamp(desiredRate, 1, maxRate());
 

@@ -81,7 +81,7 @@ namespace MechJim.Manager {
             /* update targetAPtime */
             double dV = mainBody.CircVelocityAtRadius(orbit.ApR) - orbit.SwappedVelocityAtApoapsis().magnitude;
             targetAPtime = BurnTime(dV/2);
-            if (orbit.ApA > target_altitude)
+            if (orbit.ApA > target_altitude)  /* FIXME: very spammy enabling */
                 autofairing.Enable();
 
             ThrottleState lastThrottleState = throttleState;

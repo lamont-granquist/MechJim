@@ -30,7 +30,7 @@ info:
 build: MechJim.dll
 
 MechJim.dll: $(SOURCEFILES)
-	${MCS} -t:library -lib:"${MANAGED}" \
+	${MCS} -t:library -lib:"${MANAGED}" -debug \
 		-r:Assembly-CSharp,Assembly-CSharp-firstpass,UnityEngine,UnityEngine.UI \
 		-out:$@ ${SOURCEFILES}
 

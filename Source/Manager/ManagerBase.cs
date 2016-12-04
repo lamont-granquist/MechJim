@@ -82,5 +82,19 @@ namespace MechJim.Manager {
         }
 
         public virtual void OnUpdate() { }
+
+        public virtual void Crash(EventReport data) {
+            if (enabled)
+                OnCrash(data);
+        }
+
+        public virtual void OnCrash(EventReport data) { }
+
+        public virtual void CrashSplashdown(EventReport data) {
+            if (enabled)
+                OnCrashSplashdown(data);
+        }
+
+        public virtual void OnCrashSplashdown(EventReport data) { }
     }
 }
