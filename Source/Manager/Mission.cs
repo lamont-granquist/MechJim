@@ -64,5 +64,12 @@ namespace MechJim.Manager {
             }
             return MissionCircularize;
         }
+
+        private StateFn MissionDecouple(bool stateChanged) {
+            if (stateChanged) {
+                attitude.attitudeTo(Vector3d.forward, AttitudeReference.ORBIT);
+            }
+            return MissionDecouple;
+        }
     }
 }

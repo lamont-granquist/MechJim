@@ -29,9 +29,9 @@ namespace MechJim.Manager {
         private Vector3d Omega = Vector3d.zero;
 
         /* error */
-        private double PhiTotal;
+        private double phiTotal;
         /* error in pitch, roll, yaw */
-        private Vector3d Phi = Vector3d.zero;
+        private Vector3d phiVector = Vector3d.zero;
         private Vector3d TargetOmega = Vector3d.zero;
 
         /* max angular rotation */
@@ -51,7 +51,6 @@ namespace MechJim.Manager {
                 /* SAS seems to be busted in 1.2.1? */
                 vessel.ActionGroups.SetGroup(KSPActionGroup.SAS, false);
             }
-            UpdateStateVectors();
             UpdatePredictionPI();
             UpdateControl(c);
         }
@@ -66,6 +65,7 @@ namespace MechJim.Manager {
         /* private Vector3d targetStarboard; */
 
         private void UpdateStateVectors() {
+            /* FIXME: may get called more than once per tick */
             vesselRotation = vessel.ReferenceTransform.rotation * Quaternion.Euler(-90, 0, 0);
             vesselForward = vesselRotation * Vector3d.forward;
             vesselTop = vesselRotation * Vector3d.up;
@@ -78,10 +78,19 @@ namespace MechJim.Manager {
             Omega = - vessel.angularVelocity;
         }
 
-        private void UpdatePredictionPI() {
-            PhiTotal = Vector3d.Angle(vesselForward, targetForward) * Mathf.Deg2Rad;
+        public double PhiTotal() {
+            UpdateStateVectors();
+
+            double PhiTotal = Vector3d.Angle(vesselForward, targetForward) * Mathf.Deg2Rad;
             if (Vector3d.Angle(vesselTop, targetForward) > 90)
                 PhiTotal *= -1;
+
+            return PhiTotal;
+        }
+
+        public Vector3d PhiVector() {
+            Vector3d Phi = Vector3d.zero;
+
             Phi[0] = Vector3d.Angle(vesselForward, Vector3d.Exclude(vesselStarboard, targetForward)) * Mathf.Deg2Rad;
             if (Vector3d.Angle(vesselTop, Vector3d.Exclude(vesselStarboard, targetForward)) > 90)
                 Phi[0] *= -1;
@@ -92,15 +101,23 @@ namespace MechJim.Manager {
             if (Vector3d.Angle(vesselStarboard, Vector3d.Exclude(vesselTop, targetForward)) > 90)
                 Phi[2] *= -1;
 
+            return Phi;
+        }
+
+        private void UpdatePredictionPI() {
+            phiTotal = PhiTotal();
+
+            phiVector = PhiVector();
+
             for(int i = 0; i < 3; i++) {
                 MaxOmega[i] = ControlTorque[i] * MaxStoppingTime / vessel.MOI[i];
             }
 
-            TargetOmega[0] = pitchRatePI.Update(-Phi[0], 0, MaxOmega[0]);
-            TargetOmega[1] = rollRatePI.Update(-Phi[1], 0, MaxOmega[1]);
-            TargetOmega[2] = yawRatePI.Update(-Phi[2], 0, MaxOmega[2]);
+            TargetOmega[0] = pitchRatePI.Update(-phiVector[0], 0, MaxOmega[0]);
+            TargetOmega[1] = rollRatePI.Update(-phiVector[1], 0, MaxOmega[1]);
+            TargetOmega[2] = yawRatePI.Update(-phiVector[2], 0, MaxOmega[2]);
 
-            if (Math.Abs(PhiTotal) > RollControlRange) {
+            if (Math.Abs(phiTotal) > RollControlRange) {
                 TargetOmega[1] = 0;
                 rollRatePI.ResetI();
             }
