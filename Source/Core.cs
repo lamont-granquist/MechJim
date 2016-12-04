@@ -68,7 +68,7 @@ namespace MechJim {
             void Start() {
                 window.Start();
                 GetManager<VesselState>().Enable();
-                GetManager<Mission>().Enable();
+                /* GetManager<LaunchTest>().Enable(); */
             }
 
             /* every frame */
@@ -85,6 +85,7 @@ namespace MechJim {
                 GetManager<VesselState>().Enable();
                 GetManager<VesselState>().FixedUpdate();
 
+                GetManager<LaunchTest>().FixedUpdate();
                 GetManager<Mission>().FixedUpdate();
 
                 GetManager<AscentManager>().FixedUpdate();
@@ -131,11 +132,11 @@ namespace MechJim {
             }
 
             void Crash(EventReport data) {
-                GetManager<Mission>().Crash(data);
+                GetManager<LaunchTest>().Crash(data);
             }
 
             void CrashSplashdown(EventReport data) {
-                GetManager<Mission>().CrashSplashdown(data);
+                GetManager<LaunchTest>().CrashSplashdown(data);
             }
         }
 }
