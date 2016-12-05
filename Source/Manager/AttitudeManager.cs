@@ -43,16 +43,19 @@ namespace MechJim.Manager {
                     fwd = FlightGlobals.fetch.VesselTarget.GetTransform().position - vessel.GetTransform().position;
                     up = Vector3.Cross(fwd, vesselState.normalPlus);
                     return Quaternion.LookRotation(fwd, up);
-                case AttitudeReference.RELATIVE_VELOCITY:
+                /* case AttitudeReference.RELATIVE_VELOCITY:
                     throw new Exception("RELATIVE_VELOCTY unimplemented");
                 case AttitudeReference.TARGET_ORIENTATION:
-                    throw new Exception("TARGET_ORIENTATION unimplemented");
+                    throw new Exception("TARGET_ORIENTATION unimplemented"); */
                 case AttitudeReference.MANEUVER_NODE:
                     fwd = vessel.patchedConicSolver.maneuverNodes[0].GetBurnVector(orbit);
                     up = Vector3.Cross(fwd, vesselState.normalPlus);
                     return Quaternion.LookRotation(fwd, up);
                 case AttitudeReference.SUN:
-                    throw new Exception("SUN unimplemented");
+                    Orbit baseOrbit = vessel.mainBody == Planetarium.fetch.Sun ? vessel.orbit : orbit.TopParentOrbit();
+                    up = vessel.CoMD - Planetarium.fetch.Sun.transform.position;
+                    fwd = Vector3d.Cross(-baseOrbit.GetOrbitNormal().xzy.normalized, up);
+                    return Quaternion.LookRotation(fwd, up);
                 case AttitudeReference.SURFACE_HORIZONTAL:
                     return Quaternion.LookRotation(Vector3d.Exclude(vesselState.up, vessel.srf_velocity.normalized), vesselState.up);
                 default:

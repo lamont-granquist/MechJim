@@ -8,7 +8,7 @@ namespace MechJim.Manager {
 
     [Enable(typeof(AutoPanel))]
     public class Mission: ManagerBase {
-        public delegate StateFn StateFn(bool f);
+        public delegate StateFn StateFn();
 
         public StateFn missionState;
 
@@ -21,107 +21,130 @@ namespace MechJim.Manager {
         }
 
         protected override void OnEnable() {
-            missionState = MissionPrelaunch;
+            missionState = Start;
         }
 
         public override void OnFixedUpdate() {
             StateFn lastMissionState = missionState;
 
-            missionState = missionState(false);
-            while (missionState != lastMissionState ) {
+            missionState = missionState();
+            if (missionState != lastMissionState ) {
                 Debug.Log("changed state from: " + lastMissionState.Method.Name + " to " + missionState.Method.Name);
-                lastMissionState = missionState;
-                missionState = missionState(true);
             }
         }
 
-        private StateFn MissionPrelaunch(bool stateChanged) {
-            return MissionLaunch;
+        private StateFn Start() {
+            autostage.Enable();
+            /* int_alt: 65653.6212357011 start_alt: 31.1377950716474 start_turn: 19.4863715448819 maxQ: 29.2071798789348 */
+            ascent.intermediate_altitude = 65653.6212357011;
+            ascent.start_speed = 0;
+            ascent.start_altitude = 31.1377950716474;
+            ascent.start_turn = 19.4863715448819;
+            ascent.maxQlimit = 29.2071798789348;
+            ascent.Enable();
+            return WaitAscend;
         }
 
         /* FIXME: AscentManager, AutoStage are enabled for this stage */
-        private StateFn MissionLaunch(bool stateChanged) {
-            if (stateChanged) {
-                autostage.Enable();
-                /* int_alt: 65653.6212357011 start_alt: 31.1377950716474 start_turn: 19.4863715448819 maxQ: 29.2071798789348 */
-                ascent.intermediate_altitude = 65653.6212357011;
-                ascent.start_speed = 0;
-                ascent.start_altitude = 31.1377950716474;
-                ascent.start_turn = 19.4863715448819;
-                ascent.maxQlimit = 29.2071798789348;
-                ascent.Enable();
-            }
+        private StateFn WaitAscend() {
             if (ascent.done)
-                return MissionCircularize;
-            return MissionLaunch;
+                return StartCirc;
+            return WaitAscend;
         }
 
         /* FIXME: NodeExecutor, AutoStage are enabled for this stage */
-        private StateFn MissionCircularize(bool stateChanged) {
-            if (stateChanged) {
-                var maneuver = new Maneuver.Circularize(vessel, orbit, Planetarium.GetUniversalTime() + orbit.timeToAp);
-                maneuver.PlaceManeuverNode();
-                ascent.Disable();
-                node.Enable();
-            }
-            if (!node.enabled) {  /* FIXME: standardized "done" method */
-                return MissionDecouple;
-            }
-            return MissionCircularize;
+        private StateFn StartCirc() {
+            var maneuver = new Maneuver.Circularize(vessel, orbit, Planetarium.GetUniversalTime() + orbit.timeToAp);
+            maneuver.PlaceManeuverNode();
+            ascent.Disable();
+            node.Enable();
+            return WaitNode;
         }
 
-        /* FIXME: AttitudeManager is enabled for this stage */
-        private StateFn MissionDecouple(bool stateChanged) {
-            if (stateChanged) {
-                autostage.Disable();
-                attitude.attitudeTo(Vector3d.forward, AttitudeReference.ORBIT);
+        private StateFn WaitNode() {
+            if (!node.enabled) {  /* FIXME: standardized "done" method */
+                return Prograde;
             }
+            return WaitNode;
+        }
+
+        private StateFn Prograde() {
+            autostage.Disable();
+            attitude.attitudeTo(Vector3d.forward, AttitudeReference.ORBIT);
+            return WaitPrograde;
+        }
+
+        private StateFn WaitPrograde() {
             if (attitude.AngleFromTarget() < 1) {
-                StageManager.ActivateNextStage();
-                return MissionCoast;
+                return Decouple;
             }
-            return MissionDecouple;
+            return WaitPrograde;
+        }
+
+        private StateFn Decouple() {
+            StageManager.ActivateNextStage();
+            return Sun;
+        }
+
+        private StateFn Sun() {
+            attitude.attitudeTo(Vector3d.forward, AttitudeReference.SUN);
+            return WaitSun;
+        }
+
+        private StateFn WaitSun() {
+            if (attitude.AngleFromTarget() < 1) {
+                return CoastStart;
+            }
+            return WaitSun;
         }
 
         double coastEnd;
 
-        /* FIXME: AttitudeManager, WarpManager are enabled for this stage */
-        private StateFn MissionCoast(bool stateChanged) {
-            if (stateChanged) {
-                coastEnd = Planetarium.GetUniversalTime() + 3600 * 18;
-                warp.WarpToUT(coastEnd);
-                attitude.attitudeTo(Vector3d.forward, AttitudeReference.SUN);
-            }
+        private StateFn CoastStart() {
+            coastEnd = Planetarium.GetUniversalTime() + 3600 * 18;
+            warp.WarpToUT(coastEnd);
+            return WaitCoast;
+        }
+
+        private StateFn WaitCoast() {
             if (Planetarium.GetUniversalTime() > coastEnd) {
-                return MissionRetrograde;
+                return Retrograde;
             }
-            return MissionCoast;
+            return WaitCoast;
         }
 
-        /* FIXME: AttitudeManager is enabled for this stage */
-        private StateFn MissionRetrograde(bool stateChanged) {
-            if (stateChanged) {
-                warp.Disable();
-                attitude.attitudeTo(-Vector3d.forward, AttitudeReference.ORBIT);
-            }
+        private StateFn Retrograde() {
+            warp.Disable();
+            attitude.attitudeTo(-Vector3d.forward, AttitudeReference.ORBIT);
+            return WaitRetrograde;
+        }
+
+        private StateFn WaitRetrograde() {
             if (attitude.AngleFromTarget() < 1) {
-                StageManager.ActivateNextStage();
-                return MissionReentryBurn;
+                return Decouple2;
             }
-            return MissionRetrograde;
+            return WaitRetrograde;
         }
 
-        /* FIXME: AttitudeManager from last stage still in effect*/
-        private StateFn MissionReentryBurn(bool stateChanged) {
+        private StateFn ReentryBurn() {
+            StageManager.ActivateNextStage();
+            return WaitReentryBurn;
+        }
+
+        private StateFn WaitReentryBurn() {
             if (vesselState.thrustMaximum == 0) {
-                StageManager.ActivateNextStage();  /* eject the utility section */
-                return MissionReentryGlide;
+                return Decouple2;
             }
-            return MissionReentryBurn;
+            return WaitReentryBurn;
         }
 
-        private StateFn MissionReentryGlide(bool stateChanged) {
-            return MissionReentryGlide;
+        private StateFn Decouple2() {
+            StageManager.ActivateNextStage();
+            return Done;
+        }
+
+        private StateFn Done() {
+            return Done;
         }
     }
 }

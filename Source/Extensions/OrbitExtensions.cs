@@ -324,5 +324,14 @@ namespace MechJim.Extensions {
                     Vector3d.Dot(o.Prograde(UT), dV)
                     );
         }
+
+        // Return the orbit of the parent body orbiting the sun
+        public static Orbit TopParentOrbit(this Orbit orbit) {
+            Orbit result = orbit;
+            while (result.referenceBody != Planetarium.fetch.Sun) {
+                result = result.referenceBody.orbit;
+            }
+            return result;
+        }
     }
 }
