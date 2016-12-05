@@ -65,5 +65,39 @@ namespace MechJim.Extensions {
             }
         }
 
+        public static bool IsUnfiredDecoupler(this Part p)
+        {
+            for (int i = 0; i < p.Modules.Count; i++)
+            {
+                PartModule m = p.Modules[i];
+                ModuleDecouple mDecouple = m as ModuleDecouple;
+                if (mDecouple != null)
+                {
+                    if (!mDecouple.isDecoupled && mDecouple.stagingEnabled && p.stagingOn) return true;
+                    break;
+                }
+
+                ModuleAnchoredDecoupler mAnchoredDecoupler = m as ModuleAnchoredDecoupler;
+                if (mAnchoredDecoupler != null)
+                {
+                    if (!mAnchoredDecoupler.isDecoupled && mAnchoredDecoupler.stagingEnabled && p.stagingOn) return true;
+                    break;
+                }
+
+                ModuleDockingNode mDockingNode = m as ModuleDockingNode;
+                if (mDockingNode != null)
+                {
+                    if (mDockingNode.staged && mDockingNode.stagingEnabled  && p.stagingOn) return true;
+                    break;
+                }
+
+                if (m.moduleName == "ProceduralFairingDecoupler")
+                {
+                    if (!m.Fields["decoupled"].GetValue<bool>(m) && p.stagingOn) return true;
+                    break;
+                }
+            }
+            return false;
+        }
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using MechJim.PartWrapper;
 using MechJim.Extensions;
 using System.Collections.Generic;
 
@@ -8,13 +7,13 @@ namespace MechJim.Manager {
     public class VesselState: ManagerBase {
         public VesselState(Core core): base(core) { }
 
-        public PartWrapperList<EngineWrapper>         engines = new PartWrapperList<EngineWrapper>();
-        public PartWrapperList<SolarPanelWrapper>     solarpanels = new PartWrapperList<SolarPanelWrapper>();
-        public PartWrapperList<FairingWrapper>        fairings = new PartWrapperList<FairingWrapper>();
-        public PartWrapperList<ReactionWheelWrapper>  reactionWheels = new PartWrapperList<ReactionWheelWrapper>();
-        public PartWrapperList<RCSWrapper>            rcs = new PartWrapperList<RCSWrapper>();
-        public PartWrapperList<ControlSurfaceWrapper> controlSurfaces = new PartWrapperList<ControlSurfaceWrapper>();
-        public PartWrapperList<OtherTorqueWrapper>    otherTorque = new PartWrapperList<OtherTorqueWrapper>();
+        public Dictionary<Part, double> engines = new Dictionary<Part, double>();
+        public Dictionary<Part, double> solarpanels = new Dictionary<Part, double>();
+        public Dictionary<Part, double> fairings = new Dictionary<Part, double>();
+        public Dictionary<Part, double> reactionWheels = new Dictionary<Part, double>();
+        public Dictionary<Part, double> rcs = new Dictionary<Part, double>();
+        public Dictionary<Part, double> controlSurfaces = new Dictionary<Part, double>();
+        public Dictionary<Part, double> otherTorque = new Dictionary<Part, double>();
 
         public double mass { get { return vessel.totalMass; } }
         public double time { get { return Planetarium.GetUniversalTime(); } }
@@ -66,47 +65,58 @@ namespace MechJim.Manager {
         public Vector6 torqueGimbal         = new Vector6(); // torque available from Gimbaled engines
         public Vector6 torqueOthers         = new Vector6(); // torque available from Mostly FAR
 
-        public void StartMark() {
-            engines.StartMark();
-            solarpanels.StartMark();
-            fairings.StartMark();
-            reactionWheels.StartMark();
-            rcs.StartMark();
-            controlSurfaces.StartMark();
-            otherTorque.StartMark();
+        public void SweepDict(Dictionary<Part, double> dict) {
+            foreach(KeyValuePair<Part, double> pair in dict) {
+                if (pair.Value != time) {
+                    dict.Remove(pair.Key);
+                }
+            }
+        }
+
+        public void AddDict(Dictionary<Part, double> dict, Part p) {
+            dict[p] = time;
         }
 
         public void Sweep() {
-            engines.Sweep();
-            solarpanels.Sweep();
-            fairings.Sweep();
-            reactionWheels.Sweep();
-            rcs.Sweep();
-            controlSurfaces.Sweep();
-            otherTorque.Sweep();
+            SweepDict(engines);
+            SweepDict(solarpanels);
+            SweepDict(fairings);
+            SweepDict(reactionWheels);
+            SweepDict(rcs);
+            SweepDict(controlSurfaces);
+            SweepDict(otherTorque);
+        }
+
+        private int FindDecouplingStage(Part p) {
+            if (p.IsUnfiredDecoupler())
+                return p.inverseStage;
+            if (p.parent == null)
+                return -1;
+            return FindDecouplingStage(p.parent);
         }
 
         private void WrapParts() {
-            StartMark();
-
             /* FIXME: make betterer vessel simulation */
             for (int i = 0; i < vessel.parts.Count; i++) {
                 Part p = vessel.parts[i];
 
+                int decouplingStage = FindDecouplingStage(p);
+
                 if (p.IsEngine())
-                    engines.AddPart(p);
+                    AddDict(engines, p);
                 if (p.IsSolarPanel())
-                    solarpanels.AddPart(p);
+                    AddDict(solarpanels, p);
                 if (p.IsFairing())
-                    fairings.AddPart(p);
+                    AddDict(fairings, p);
                 if (p.IsReactionWheel())
-                    reactionWheels.AddPart(p);
+                    AddDict(reactionWheels, p);
                 if (p.IsRCS())
-                    rcs.AddPart(p);
+                    AddDict(rcs, p);
                 if (p.IsControlSurface())
-                    controlSurfaces.AddPart(p);
+                    AddDict(controlSurfaces, p);
                 if (p.IsOtherTorque())
-                    otherTorque.AddPart(p);
+                    AddDict(otherTorque, p);
+                Debug.Log("Part = " + p + " inverse stage: " + p.inverseStage + " decoupling stage: " + decouplingStage);
             }
 
             Sweep();
@@ -117,8 +127,8 @@ namespace MechJim.Manager {
 
             double thrustOverVe = 0.0;
 
-            for (int i = 0; i < engines.Count; i++) {
-                Part p = engines[i].part;
+            foreach(var pair in engines) {
+                Part p = pair.Key;
 
                 List<ModuleGimbal> glist = p.Modules.GetModules<ModuleGimbal>();
                 for (int m = 0; m < glist.Count; m++) {
@@ -171,8 +181,8 @@ namespace MechJim.Manager {
         private void AnalyzeRCS() {
             torqueRcs.Reset();
 
-            for (int i = 0; i < rcs.Count; i++) {
-                Part p = rcs[i].part;
+            foreach(var pair in rcs) {
+                Part p = pair.Key;
 
                 List<ModuleRCS> mlist = p.Modules.GetModules<ModuleRCS>();
 
@@ -190,8 +200,8 @@ namespace MechJim.Manager {
         private void AnalyzeReactionWheels() {
             torqueReactionWheel.Reset();
 
-            for (int i = 0; i < reactionWheels.Count; i++) {
-                Part p = reactionWheels[i].part;
+            foreach(var pair in reactionWheels) {
+                Part p = pair.Key;
 
                 List<ModuleReactionWheel> mlist = p.Modules.GetModules<ModuleReactionWheel>();
 
@@ -209,8 +219,8 @@ namespace MechJim.Manager {
         private void AnalyzeControlSurfaces() {
             torqueControlSurface.Reset();
 
-            for (int i = 0; i < controlSurfaces.Count; i++) {
-                Part p = controlSurfaces[i].part;
+            foreach(var pair in controlSurfaces) {
+                Part p = pair.Key;
 
                 List<ModuleControlSurface> mlist = p.Modules.GetModules<ModuleControlSurface>();
 
@@ -229,8 +239,8 @@ namespace MechJim.Manager {
             torqueOthers.Reset();
 
             /* this is a special list of ITorqueProvider-containing Parts that are *NOT* Engines, RW, RCS, Control Surfaces */
-            for (int i = 0; i < otherTorque.Count; i++) {
-                Part p = otherTorque[i].part;
+            foreach(var pair in otherTorque) {
+                Part p = pair.Key;
 
                 List<ITorqueProvider> mlist = p.Modules.GetModules<ITorqueProvider>();
 

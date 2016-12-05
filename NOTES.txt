@@ -11,6 +11,10 @@ MIDACO Solver:
 
 - http://www.midaco-solver.com/index.php/about/benchmarks/esa-gtop
 
+ALGLIB:
+
+- http://www.alglib.net/download.php
+
 Zero Searching:
 
 - Brent's method / Brent-Dekker method:  https://en.wikipedia.org/wiki/Brent%27s_method
