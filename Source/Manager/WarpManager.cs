@@ -20,6 +20,8 @@ namespace MechJim.Manager {
         }
 
         public void WarpToUT(double UT) {
+            Enable();
+
             warpToUT = UT;
 
             if (!vessel.LandedOrSplashed && vessel.altitude > timewarp.GetAltitudeLimit(1, mainBody))
@@ -28,8 +30,9 @@ namespace MechJim.Manager {
                 SetPhysicsMode();
 
             /* why is TimeWarp.CurrentRateIndex in the next line and not TimeWarp.CurrentRate? */
-            double desiredRate = UT - vesselState.time + Time.fixedDeltaTime * TimeWarp.CurrentRateIndex;
+            double desiredRate = ( UT - vesselState.time ) / Time.fixedDeltaTime;
             desiredRate = Utils.Clamp(desiredRate, 1, maxRate());
+            Debug.Log("deltaT = " + (UT - vesselState.time ) + " Time.fixedDeltaTime = " + Time.fixedDeltaTime + " desiredRate = " + desiredRate);
 
             WarpAtRate(desiredRate);
         }
