@@ -93,8 +93,10 @@ namespace MechJim {
                 GetManager<AutoPanel>().FixedUpdate();
                 GetManager<AutoFairing>().FixedUpdate();
                 GetManager<AutoStage>().FixedUpdate();
+                GetManager<AutoChute>().FixedUpdate();
 
                 GetManager<NodeExecutor>().FixedUpdate();
+                GetManager<WarpManager>().FixedUpdate();
             }
 
             /* leaving scene */

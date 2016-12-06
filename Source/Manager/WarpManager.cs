@@ -1,4 +1,3 @@
-/* recommended mod: WarpEverywhere */
 using UnityEngine;
 using MechJim.Extensions;
 
@@ -15,8 +14,19 @@ namespace MechJim.Manager {
         }
 
         public override void OnFixedUpdate() {
-            if(warpToUT > 0)
-                WarpToUT(warpToUT);
+            if(warpToUT > 0) {
+                if (vesselState.time > warpToUT) {
+                    Disable();
+                } else {
+                    WarpToUT(warpToUT);
+                }
+            }
+        }
+
+        public void WarpToAtmosphericEntry() {
+            WarpToUT(
+                OrbitExtensions.TimeOfRadius(orbit, vesselState.time, mainBody.Radius + mainBody.RealMaxAtmosphereAltitude())
+            );
         }
 
         public void WarpToUT(double UT) {
@@ -29,10 +39,8 @@ namespace MechJim.Manager {
             else
                 SetPhysicsMode();
 
-            /* why is TimeWarp.CurrentRateIndex in the next line and not TimeWarp.CurrentRate? */
-            double desiredRate = ( UT - vesselState.time ) / Time.fixedDeltaTime;
+            double desiredRate = UT - vesselState.time;
             desiredRate = Utils.Clamp(desiredRate, 1, maxRate());
-            Debug.Log("deltaT = " + (UT - vesselState.time ) + " Time.fixedDeltaTime = " + Time.fixedDeltaTime + " desiredRate = " + desiredRate);
 
             WarpAtRate(desiredRate);
         }

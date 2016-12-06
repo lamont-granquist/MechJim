@@ -18,10 +18,9 @@ namespace MechJim.Manager {
         }
 
         public double best_mass = -1;
-        public double best_intermediate_altitude = 64262.0608998752;
-        public double best_start_altitude = 45.4472485070337;
-        public double best_start_turn = 20.2655437389694;
-        public double best_maxQlimit = 28.5327588131338;
+        public double best_intermediate_altitude = 65653.6212357011;
+        public double best_start_turn = 19.4863715448819;
+        public double best_maxQlimit = 29.2071798789348;
     }
 
     [Enable(typeof(AutoPanel))]
@@ -38,13 +37,10 @@ namespace MechJim.Manager {
 
         private void GuessNextParams() {
             ascent.intermediate_altitude = LaunchTestState.Instance.best_intermediate_altitude;
-            ascent.start_altitude = LaunchTestState.Instance.best_start_altitude;
             ascent.start_turn = LaunchTestState.Instance.best_start_turn;
             ascent.maxQlimit = LaunchTestState.Instance.best_maxQlimit;
             if (rnd.NextDouble() > 0.5)
                 ascent.intermediate_altitude += ( rnd.NextDouble() - 0.5 ) * 10000;  /* +/- 5,000m */
-            if (rnd.NextDouble() > 0.5)
-                ascent.start_altitude += ( rnd.NextDouble() - 0.5 ) * 20; /* +/- 10m */
             if (rnd.NextDouble() > 0.5)
                 ascent.start_turn += ( rnd.NextDouble() - 0.5 ) * 2; /* +/- 1 degree */
             if (rnd.NextDouble() > 0.5)
@@ -62,6 +58,7 @@ namespace MechJim.Manager {
             /* starting params */
             ascent.target_altitude = 100000;
             ascent.start_speed = 0;
+            ascent.start_altitude = 50;
             GuessNextParams();
             missionState = LaunchTestPrelaunch;
         }
@@ -108,7 +105,6 @@ namespace MechJim.Manager {
                 if (vesselState.mass > LaunchTestState.Instance.best_mass) {
                     Debug.Log("NEW BEST mass: " + vesselState.mass + "int: " + ascent.intermediate_altitude + " start_alt: " + ascent.start_altitude + " start_turn: " + ascent.start_turn + " maxQ: " + ascent.maxQlimit);
                     LaunchTestState.Instance.best_intermediate_altitude = ascent.intermediate_altitude;
-                    LaunchTestState.Instance.best_start_altitude = ascent.start_altitude;
                     LaunchTestState.Instance.best_start_turn = ascent.start_turn;
                     LaunchTestState.Instance.best_maxQlimit = ascent.maxQlimit;
                     LaunchTestState.Instance.best_mass = vesselState.mass;

@@ -57,6 +57,10 @@ namespace MechJim.Extensions {
             return p.Modules.Contains("ITorqueProvider") && !p.IsRCS() && !p.IsControlSurface() && !p.IsReactionWheel() && !p.IsEngine();
         }
 
+        public static bool IsParachute(this Part p) {
+            return p.Modules.Contains("ModuleParachute");
+        }
+
         public static void SendMethodToModuleNamed(this Part p, string method, string module) {
             if (p.Modules.Contains(module)) {
                 PartModule pm = p.Modules[module];

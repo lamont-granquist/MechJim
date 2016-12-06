@@ -6,7 +6,7 @@ using KSP.UI.Screens;
 
 namespace MechJim.Manager {
 
-    [Enable(typeof(AutoPanel))]
+    [Enable(typeof(AutoPanel), typeof(AutoChute))]
     public class Mission: ManagerBase {
         public delegate StateFn StateFn();
 
@@ -35,12 +35,12 @@ namespace MechJim.Manager {
 
         private StateFn Start() {
             autostage.Enable();
-            /* int_alt: 65653.6212357011 start_alt: 31.1377950716474 start_turn: 19.4863715448819 maxQ: 29.2071798789348 */
+            /* [LOG 07:41:56.657] NEW BEST mass: 9.85823153331876int: 65653.6212357011 start_alt: 50 start_turn: 19.8115793679895 maxQ: 27.8286833352543 */
             ascent.intermediate_altitude = 65653.6212357011;
             ascent.start_speed = 0;
-            ascent.start_altitude = 31.1377950716474;
-            ascent.start_turn = 19.4863715448819;
-            ascent.maxQlimit = 29.2071798789348;
+            ascent.start_altitude = 50;
+            ascent.start_turn = 19.8115793679895;
+            ascent.maxQlimit = 27.8286833352543;
             ascent.Enable();
             return WaitAscend;
         }
@@ -114,14 +114,13 @@ namespace MechJim.Manager {
         }
 
         private StateFn Retrograde() {
-            warp.Disable();
             attitude.attitudeTo(-Vector3d.forward, AttitudeReference.ORBIT);
             return WaitRetrograde;
         }
 
         private StateFn WaitRetrograde() {
             if (attitude.AngleFromTarget() < 1) {
-                return Decouple2;
+                return ReentryBurn;
             }
             return WaitRetrograde;
         }
@@ -140,7 +139,31 @@ namespace MechJim.Manager {
 
         private StateFn Decouple2() {
             StageManager.ActivateNextStage();
-            return Done;
+            return WarpToAtm;
+        }
+
+        private StateFn WarpToAtm() {
+            warp.WarpToAtmosphericEntry();
+            return WaitForAtm;
+        }
+
+        private StateFn WaitForAtm() {
+            if (!warp.enabled) {
+                return WarpToGround;
+            }
+            return WaitForAtm;
+        }
+
+        private StateFn WarpToGround() {
+            attitude.attitudeTo(-Vector3d.forward, AttitudeReference.ORBIT);
+            warp.WarpAtPhysicsRate(4);
+            return WaitForGround;
+        }
+
+        private StateFn WaitForGround() {
+            if (vessel.situation == Vessel.Situations.LANDED || vessel.situation == Vessel.Situations.SPLASHED)  /* FIXME: optimism */
+                return Done;
+            return WaitForGround;
         }
 
         private StateFn Done() {

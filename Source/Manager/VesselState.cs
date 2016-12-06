@@ -4,9 +4,20 @@ using MechJim.Extensions;
 using System.Collections.Generic;
 
 namespace MechJim.Manager {
+    public class NegOneList<T> {
+        private List<T> list = new List<T>();
+        public NegOneList() { }
+        public int Count { get { return list.Count; } }
+        public T this[int i] { get { return list[i+1]; } set { list[i+1] = value; } }
+        public void Add(T t) {
+            list.Add(t);
+        }
+    }
+
     public class VesselState: ManagerBase {
         public VesselState(Core core): base(core) { }
 
+        /* hash tables of part types */
         public Dictionary<Part, double> engines = new Dictionary<Part, double>();
         public Dictionary<Part, double> solarpanels = new Dictionary<Part, double>();
         public Dictionary<Part, double> fairings = new Dictionary<Part, double>();
@@ -14,6 +25,11 @@ namespace MechJim.Manager {
         public Dictionary<Part, double> rcs = new Dictionary<Part, double>();
         public Dictionary<Part, double> controlSurfaces = new Dictionary<Part, double>();
         public Dictionary<Part, double> otherTorque = new Dictionary<Part, double>();
+        public Dictionary<Part, double> parachutes = new Dictionary<Part, double>();
+
+        /* list of hash tables for staging */
+        public NegOneList<Dictionary<Part, double>> InverseStageParts = new NegOneList<Dictionary<Part, double>>();
+        public NegOneList<Dictionary<Part, double>> DecouplingStageParts = new NegOneList<Dictionary<Part, double>>();
 
         public double mass { get { return vessel.totalMass; } }
         public double time { get { return Planetarium.GetUniversalTime(); } }
@@ -65,16 +81,56 @@ namespace MechJim.Manager {
         public Vector6 torqueGimbal         = new Vector6(); // torque available from Gimbaled engines
         public Vector6 torqueOthers         = new Vector6(); // torque available from Mostly FAR
 
-        public void SweepDict(Dictionary<Part, double> dict) {
-            foreach(KeyValuePair<Part, double> pair in dict) {
-                if (pair.Value != time) {
-                    dict.Remove(pair.Key);
+        public bool parachuteDeployable;  // true if there are any available chutes to fire
+
+        /* i think EachKey will reduce garbage compared to foreach */
+        /* http://answers.unity3d.com/questions/697498/any-way-to-use-foreachfor-with-dictionary-without.html */
+        /* FIXME: benchmark */
+        public void EachKey(Dictionary<Part, double> dict, Action<Part> f) {
+            var enumerator = dict.GetEnumerator();
+            try {
+                while (enumerator.MoveNext()) {
+                    f(enumerator.Current.Key);
                 }
             }
+            finally {
+                enumerator.Dispose();
+            }
+        }
+
+        public void EachKeyValue(Dictionary<Part, double> dict, Action<Part, double> f) {
+            var enumerator = dict.GetEnumerator();
+            try {
+                while (enumerator.MoveNext()) {
+                    f(enumerator.Current.Key, enumerator.Current.Value);
+                }
+            }
+            finally {
+                enumerator.Dispose();
+            }
+        }
+
+        public void SweepDict(Dictionary<Part, double> dict) {
+            EachKeyValue(dict, (p, t) => {
+                    if (t != time)
+                      dict.Remove(p);
+            });
         }
 
         public void AddDict(Dictionary<Part, double> dict, Part p) {
             dict[p] = time;
+        }
+
+        public void SweepListDict(NegOneList<Dictionary<Part, double>> list) {
+            for(int i = -1; i < list.Count - 1; i++) {
+                SweepDict(list[i]);
+            }
+        }
+
+        public void AddListDict(NegOneList<Dictionary<Part, double>> list, int index, Part p) {
+            while (index+1 >= list.Count)
+                list.Add(new Dictionary<Part, double>());
+            AddDict(list[index], p);
         }
 
         public void Sweep() {
@@ -85,6 +141,8 @@ namespace MechJim.Manager {
             SweepDict(rcs);
             SweepDict(controlSurfaces);
             SweepDict(otherTorque);
+            SweepListDict(InverseStageParts);
+            SweepListDict(DecouplingStageParts);
         }
 
         private int FindDecouplingStage(Part p) {
@@ -102,6 +160,9 @@ namespace MechJim.Manager {
 
                 int decouplingStage = FindDecouplingStage(p);
 
+                AddListDict(InverseStageParts, p.inverseStage, p);
+                AddListDict(DecouplingStageParts, decouplingStage, p);
+
                 if (p.IsEngine())
                     AddDict(engines, p);
                 if (p.IsSolarPanel())
@@ -116,7 +177,8 @@ namespace MechJim.Manager {
                     AddDict(controlSurfaces, p);
                 if (p.IsOtherTorque())
                     AddDict(otherTorque, p);
-                Debug.Log("Part = " + p + " inverse stage: " + p.inverseStage + " decoupling stage: " + decouplingStage);
+                if (p.IsParachute())
+                    AddDict(parachutes, p);
             }
 
             Sweep();
@@ -144,7 +206,7 @@ namespace MechJim.Manager {
 
                 for (int m = 0; m < elist.Count; m++) {
                     ModuleEngines e = elist[m];
-                    if ((!e.EngineIgnited) || (!e.isEnabled)) {
+                    if ((!e.EngineIgnited) || (!e.isEnabled) || (!e.isOperational)) {
                         continue;
                     }
                     float thrustLimiter = e.thrustPercentage / 100f;
@@ -181,9 +243,7 @@ namespace MechJim.Manager {
         private void AnalyzeRCS() {
             torqueRcs.Reset();
 
-            foreach(var pair in rcs) {
-                Part p = pair.Key;
-
+            EachKey(rcs, p => {
                 List<ModuleRCS> mlist = p.Modules.GetModules<ModuleRCS>();
 
                 for (int m = 0; m < mlist.Count; m++) {
@@ -194,7 +254,7 @@ namespace MechJim.Manager {
                     torqueRcs.Add(pos);
                     torqueRcs.Add(-neg);
                 }
-            }
+            });
         }
 
         private void AnalyzeReactionWheels() {
@@ -255,6 +315,23 @@ namespace MechJim.Manager {
             }
         }
 
+        private void AnalyzeParachutes() {
+            parachuteDeployable = false;
+
+            foreach(var pair in parachutes) {
+                Part p = pair.Key;
+
+                List<ModuleParachute> mlist = p.Modules.GetModules<ModuleParachute>();
+                for(int i = 0; i < mlist.Count; i++) {
+                    ModuleParachute chute = mlist[i];
+                    if (chute.deploymentState != ModuleParachute.deploymentStates.DEPLOYED ||
+                            chute.deploymentState != ModuleParachute.deploymentStates.SEMIDEPLOYED) {
+                        parachuteDeployable = true;
+                    }
+                }
+            }
+        }
+
         public override void OnFixedUpdate() {
             rotationSurface = Quaternion.LookRotation(north, up);
             rotationVesselSurface = Quaternion.Inverse(Quaternion.Euler(90, 0, 0) * Quaternion.Inverse(vessel.GetTransform().rotation) * rotationSurface);
@@ -283,6 +360,7 @@ namespace MechJim.Manager {
             AnalyzeReactionWheels();
             AnalyzeControlSurfaces();
             AnalyzeOtherTorque();
+            AnalyzeParachutes();
 
             torqueAvailable = Vector3d.zero;
 
