@@ -27,7 +27,7 @@ namespace MechJim.Manager {
         public override void OnFixedUpdate() {
             if (vessel.altitude > mainBody.RealMaxAtmosphereAltitude())
                 return;
-            if (vessel.terrainAltitude > deploy_altitude)
+            if (vessel.radarAltitude > deploy_altitude)
                 return;
             if (!vesselState.parachuteDeployable)
                 return;
