@@ -19,6 +19,7 @@ namespace MechJim {
             }
 
             public List<Type> managerClasses = new List<Type>();
+            public List<Type> sortedManagerClasses = new List<Type>();
             public Dictionary<Type,ManagerBase> managerDict = new Dictionary<Type,ManagerBase>();
 
             private void LoadManagers() {
@@ -33,6 +34,15 @@ namespace MechJim {
                                 managerDict.Add(type, (ManagerBase)(constructorInfo.Invoke(new object[] { this })));
                             }
                         }
+                    }
+                }
+                sortedManagerClasses.Add(typeof(VesselState));
+                while (sortedManagerClasses.Count < managerClasses.Count) {
+                    for (int i=0; i<managerClasses.Count; i++) {
+                        Type klass = managerClasses[i];
+                        if (sortedManagerClasses.Contains(klass))
+                            continue;
+                        sortedManagerClasses.Add(klass);
                     }
                 }
             }
@@ -62,17 +72,27 @@ namespace MechJim {
                 window = new Window(this);
 
                 LoadManagers();
+
+                for(int i=0; i<sortedManagerClasses.Count; i++) {
+                    managerDict[sortedManagerClasses[i]].Awake();
+                }
             }
 
             /* starting */
             void Start() {
                 window.Start();
                 GetManager<VesselState>().Enable();
-                /* GetManager<LaunchTest>().Enable(); */
+
+                for(int i=0; i<sortedManagerClasses.Count; i++) {
+                    managerDict[sortedManagerClasses[i]].Start();
+                }
             }
 
             /* every frame */
             void Update() {
+                for(int i=0; i<sortedManagerClasses.Count; i++) {
+                    managerDict[sortedManagerClasses[i]].Update();
+                }
             }
 
             /* every physics step */
@@ -81,26 +101,17 @@ namespace MechJim {
                 vessel.OnFlyByWire -= Drive;
                 vessel.OnFlyByWire += Drive;
 
-                /* always force this before everyone else */
-                GetManager<VesselState>().Enable();
-                GetManager<VesselState>().FixedUpdate();
-
-                GetManager<LaunchTest>().FixedUpdate();
-                GetManager<Mission>().FixedUpdate();
-
-                GetManager<AscentManager>().FixedUpdate();
-
-                GetManager<AutoPanel>().FixedUpdate();
-                GetManager<AutoFairing>().FixedUpdate();
-                GetManager<AutoStage>().FixedUpdate();
-                GetManager<AutoChute>().FixedUpdate();
-
-                GetManager<NodeExecutor>().FixedUpdate();
-                GetManager<WarpManager>().FixedUpdate();
+                for(int i=0; i<sortedManagerClasses.Count; i++) {
+                    managerDict[sortedManagerClasses[i]].FixedUpdate();
+                }
             }
 
             /* leaving scene */
             void OnDestroy() {
+                for(int i=0; i<sortedManagerClasses.Count; i++) {
+                    managerDict[sortedManagerClasses[i]].OnDestroy();
+                }
+
                 FlightGlobals.ActiveVessel.OnFlyByWire -= Drive;
                 window.OnDestroy();
             }
@@ -108,9 +119,9 @@ namespace MechJim {
             /* FlyByWire callback */
             private void Drive(FlightCtrlState s) {
                 vessel = FlightGlobals.ActiveVessel;
-                GetManager<ThrottleManager>().Drive(s);
-                GetManager<AttitudeManager>().Drive(s); /* before steering */
-                GetManager<SteeringManager>().Drive(s);
+                for(int i=0; i<sortedManagerClasses.Count; i++) {
+                    managerDict[sortedManagerClasses[i]].Drive(s);
+                }
                 CheckFlightCtrlState(s);
             }
 
@@ -134,11 +145,16 @@ namespace MechJim {
             }
 
             void Crash(EventReport data) {
+                for(int i=0; i<sortedManagerClasses.Count; i++) {
+                    managerDict[sortedManagerClasses[i]].Crash(data);
+                }
                 GetManager<LaunchTest>().Crash(data);
             }
 
             void CrashSplashdown(EventReport data) {
-                GetManager<LaunchTest>().CrashSplashdown(data);
+                for(int i=0; i<sortedManagerClasses.Count; i++) {
+                    managerDict[sortedManagerClasses[i]].CrashSplashdown(data);
+                }
             }
         }
 }

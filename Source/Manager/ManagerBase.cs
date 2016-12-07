@@ -65,7 +65,17 @@ namespace MechJim.Manager {
 
         public virtual void OnDrive(FlightCtrlState s) { }
 
+        public virtual void Start() {
+            /* purposefully does not have "enable" checking */
+            OnStart();
+        }
+
         public virtual void OnStart() { }
+
+        public virtual void Awake() {
+            /* purposefully does not have "enable" checking */
+            OnAwake();
+        }
 
         public virtual void OnAwake() { }
 
@@ -96,5 +106,13 @@ namespace MechJim.Manager {
         }
 
         public virtual void OnCrashSplashdown(EventReport data) { }
+
+        public virtual void OnDestroy() {
+            /* deliberately does not check enabled since this is more like a destructor */
+            /* and this naming scheme just got goofy */
+            OnOnDestroy();
+        }
+
+        public virtual void OnOnDestroy() { }
     }
 }
