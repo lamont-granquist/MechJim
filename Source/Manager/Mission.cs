@@ -6,7 +6,7 @@ using KSP.UI.Screens;
 
 namespace MechJim.Manager {
 
-    [Enable(typeof(AutoPanel), typeof(AutoChute))]
+    [Enable(typeof(AutoPanel), typeof(AutoChute), typeof(AutoScience))]
     public class Mission: ManagerBase {
         public delegate StateFn StateFn();
 
@@ -21,7 +21,7 @@ namespace MechJim.Manager {
         }
 
         protected override void OnEnable() {
-            missionState = Start;
+            missionState = Begin;
         }
 
         public override void OnFixedUpdate() {
@@ -33,7 +33,7 @@ namespace MechJim.Manager {
             }
         }
 
-        private StateFn Start() {
+        private StateFn Begin() {
             autostage.Enable();
             /* [LOG 07:41:56.657] NEW BEST mass: 9.85823153331876int: 65653.6212357011 start_alt: 50 start_turn: 19.8115793679895 maxQ: 27.8286833352543 */
             ascent.intermediate_altitude = 65653.6212357011;
