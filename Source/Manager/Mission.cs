@@ -6,7 +6,7 @@ using KSP.UI.Screens;
 
 namespace MechJim.Manager {
 
-    [Enable(typeof(AutoPanel), typeof(AutoChute), typeof(AutoScience))]
+    [Enable(typeof(AutoPanel), typeof(AutoChute), typeof(AutoScience), typeof(AutoStage), typeof(WarpManager))]
     public class Mission: ManagerBase {
         public delegate StateFn StateFn();
 
@@ -15,9 +15,8 @@ namespace MechJim.Manager {
         public Mission(Core core): base(core) { }
 
         protected override void OnDisable() {
-            ascent.Disable();
-            node.Disable();
-            autostage.Disable();
+            ascent.UnRegister(this);
+            node.UnRegister(this);
         }
 
         protected override void OnEnable() {
@@ -34,30 +33,29 @@ namespace MechJim.Manager {
         }
 
         private StateFn Begin() {
-            autostage.Enable();
+            autostage.Register(this);
             /* [LOG 07:41:56.657] NEW BEST mass: 9.85823153331876int: 65653.6212357011 start_alt: 50 start_turn: 19.8115793679895 maxQ: 27.8286833352543 */
             ascent.intermediate_altitude = 65653.6212357011;
             ascent.start_speed = 0;
             ascent.start_altitude = 50;
             ascent.start_turn = 19.8115793679895;
             ascent.maxQlimit = 27.8286833352543;
-            ascent.Enable();
+            ascent.Register(this);
+            autostage.maxstage = 4;
             return WaitAscend;
         }
 
-        /* FIXME: AscentManager, AutoStage are enabled for this stage */
         private StateFn WaitAscend() {
             if (ascent.done)
                 return StartCirc;
             return WaitAscend;
         }
 
-        /* FIXME: NodeExecutor, AutoStage are enabled for this stage */
         private StateFn StartCirc() {
             var maneuver = new Maneuver.Circularize(vessel, orbit, Planetarium.GetUniversalTime() + orbit.timeToAp);
             maneuver.PlaceManeuverNode();
-            ascent.Disable();
-            node.Enable();
+            ascent.UnRegister(this);
+            node.Register(this);
             return WaitNode;
         }
 
@@ -69,7 +67,6 @@ namespace MechJim.Manager {
         }
 
         private StateFn Prograde() {
-            autostage.Disable();
             attitude.attitudeTo(Vector3d.forward, AttitudeReference.ORBIT);
             return WaitPrograde;
         }
@@ -99,10 +96,25 @@ namespace MechJim.Manager {
         }
 
         double coastEnd;
+        double scienceEnd;
 
         private StateFn CoastStart() {
             coastEnd = Planetarium.GetUniversalTime() + 3600 * 18;
-            warp.WarpToUT(coastEnd);
+            scienceEnd = Planetarium.GetUniversalTime() + orbit.period * 2;
+            autoscience.AutoWarpRate(100);
+            return WaitScience;
+        }
+
+        private StateFn WaitScience() {
+            if (Planetarium.GetUniversalTime() > scienceEnd) {
+                return DoneScience;
+            }
+            return WaitScience;
+        }
+
+        private StateFn DoneScience() {
+            autoscience.AutoWarpRate(0);
+            warp.WarpToUT(this, coastEnd);
             return WaitCoast;
         }
 
@@ -143,7 +155,7 @@ namespace MechJim.Manager {
         }
 
         private StateFn WarpToAtm() {
-            warp.WarpToAtmosphericEntry();
+            warp.WarpToAtmosphericEntry(this);
             return WaitForAtm;
         }
 
@@ -156,7 +168,7 @@ namespace MechJim.Manager {
 
         private StateFn WarpToGround() {
             attitude.attitudeTo(-Vector3d.forward, AttitudeReference.ORBIT);
-            warp.WarpAtPhysicsRate(4);
+            warp.WarpAtPhysicsRate(this, 4);
             return WaitForGround;
         }
 
@@ -167,6 +179,7 @@ namespace MechJim.Manager {
         }
 
         private StateFn Done() {
+            UnRegister(this);
             return Done;
         }
     }

@@ -6,7 +6,7 @@ using UnityEngine;
 /* this is a stock launcher, not suitable for RSS/RO/RF */
 namespace MechJim.Manager {
 
-    [Enable(typeof(ThrottleManager), typeof(AttitudeManager), typeof(WarpManager))]
+    [Enable(typeof(ThrottleManager), typeof(AttitudeManager), typeof(WarpManager), typeof(AutoFairing))]
     public class AscentManager: ManagerBase {
         public bool done { get; set; }
         public double target_altitude { get; set; }
@@ -20,7 +20,6 @@ namespace MechJim.Manager {
         public PIDLoop throttlePID = new PIDLoop(.8, 0.15, 0.1);
 
         override protected void OnDisable() {
-            autofairing.Disable();
         }
 
         public enum ThrottleState {
@@ -81,8 +80,6 @@ namespace MechJim.Manager {
             /* update targetAPtime */
             double dV = mainBody.CircVelocityAtRadius(orbit.ApR) - orbit.SwappedVelocityAtApoapsis().magnitude;
             targetAPtime = BurnTime(dV/2);
-            if (orbit.ApA > target_altitude)  /* FIXME: very spammy enabling */
-                autofairing.Enable();
 
             ThrottleState lastThrottleState = throttleState;
             AttitudeState lastAttitudeState = attitudeState;
@@ -119,12 +116,12 @@ namespace MechJim.Manager {
         /* burn to raise and maintain Ap at intermediate altitude */
         private ThrottleState ThrottleLaunch() {
             if (orbit.ApA > intermediate_altitude) {
-                warp.WarpAtPhysicsRate(4, true);
+                warp.WarpAtPhysicsRate(this, 4, true);
                 throttle.target = 0.0;
                 if ( adjustedTimeToAp() < targetAPtime )
                     return ThrottleState.FINAL;
             } else {
-                warp.WarpAtPhysicsRate(0, true);
+                warp.WarpAtPhysicsRate(this, 0, true);
                 if (vessel.dynamicPressurekPa < maxQlimit)
                     throttlePID.ResetI();
                 throttle.target = throttlePID.Update(vessel.dynamicPressurekPa, maxQlimit, 0, 1);
@@ -135,13 +132,13 @@ namespace MechJim.Manager {
         /* burn to raise and maintain Ap at target altitude */
         private ThrottleState ThrottleFinal() {
             if (orbit.ApA < target_altitude) {
-                warp.WarpAtPhysicsRate(0, true);
+                warp.WarpAtPhysicsRate(this, 0, true);
                 if (orbit.ApA > target_altitude * 0.95)
                     throttle.target = 0.1;
                 else
                     throttle.target = 1.0;
             } else {
-                warp.WarpAtPhysicsRate(4, true);
+                warp.WarpAtPhysicsRate(this, 4, true);
                 throttle.target = 0.0;
                 if (vessel.altitude > mainBody.RealMaxAtmosphereAltitude())
                     return ThrottleState.EXIT;
@@ -151,7 +148,7 @@ namespace MechJim.Manager {
 
         /* shut off throttle when we're done */
         private ThrottleState ThrottleExit() {
-            warp.MinimumWarp();
+            warp.MinimumWarp(this);
             throttle.target = 0.0;
             done = true;
             return ThrottleState.EXIT;

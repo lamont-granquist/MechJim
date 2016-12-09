@@ -332,6 +332,11 @@ namespace MechJim.Manager {
             }
         }
 
+        /* auto-enable since everything pretty much needs this */
+        public override void Start() {
+            Register(this);
+        }
+
         public override void OnFixedUpdate() {
             rotationSurface = Quaternion.LookRotation(north, up);
             rotationVesselSurface = Quaternion.Inverse(Quaternion.Euler(90, 0, 0) * Quaternion.Inverse(vessel.GetTransform().rotation) * rotationSurface);

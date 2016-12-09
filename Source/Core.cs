@@ -81,7 +81,6 @@ namespace MechJim {
             /* starting */
             void Start() {
                 window.Start();
-                GetManager<VesselState>().Enable();
 
                 for(int i=0; i<sortedManagerClasses.Count; i++) {
                     managerDict[sortedManagerClasses[i]].Start();
@@ -148,7 +147,6 @@ namespace MechJim {
                 for(int i=0; i<sortedManagerClasses.Count; i++) {
                     managerDict[sortedManagerClasses[i]].Crash(data);
                 }
-                GetManager<LaunchTest>().Crash(data);
             }
 
             void CrashSplashdown(EventReport data) {
