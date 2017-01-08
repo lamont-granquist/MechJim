@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 
 namespace MechJim.Manager {
+    [Enable(typeof(WarpManager))]
     public class AutoScience: ManagerBase {
         public ModuleScienceContainer activeContainer { get; set; }
+        public double autowarpRate { get; set; }
 
         public AutoScience(Core core): base(core) { }
 
@@ -23,12 +25,28 @@ namespace MechJim.Manager {
             return vessel.FindPartModulesImplementing<ModuleScienceContainer>();
         }
 
+        protected override void OnEnable() {
+            autowarpRate = 0;
+        }
+
+        protected override void OnDisable() {
+            autowarpRate = 0;
+        }
+
+        public void AutoWarpRate(double rate) {
+            if (rate <= 1) {
+                warp.MinimumWarp();
+            }
+            autowarpRate = rate;
+        }
+
         public override void OnFixedUpdate() {
             if (HighLogic.CurrentGame.Mode != Game.Modes.CAREER && HighLogic.CurrentGame.Mode != Game.Modes.SCIENCE_SANDBOX)
                 return;
             if (!ActiveContainer())
                 return;
             TransferScience();
+            MaybeManageWarp();
             RunScience();
         }
 
@@ -48,21 +66,49 @@ namespace MechJim.Manager {
                 && GameVariables.Instance.UnlockedFuelTransfer(ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.ResearchAndDevelopment));
         }
 
+        private bool runnableExperiment(ModuleScienceExperiment e) {
+            if (ActiveContainer().HasData(newScienceData(e)))
+                return false;
+            if (!surfaceSamplesUnlocked() && e.experiment.id == "surfaceSample")
+                return false;
+            if (!e.rerunnable && !IsScientistOnBoard()) /* FIXME: if its 100% and no scientist, still take the data */
+                return false;
+            if (!e.experiment.IsAvailableWhile(currentSituation(), mainBody))
+                return false;
+            if (currentScienceValue(e) < 0.1)
+                return false;
+            return true;
+        }
+
+        private bool vesselHasRunnableScience() {
+            List<ModuleScienceExperiment> experiments = ExperimentList();
+            if (experiments.Count == 0)
+                return false;
+            for(int i=0; i<experiments.Count; i++) {
+                ModuleScienceExperiment e = experiments[i];
+                if (runnableExperiment(e))
+                    return true;
+            }
+            return false;
+        }
+
+        private void MaybeManageWarp() {
+            if (autowarpRate <= 1)
+                return;
+            if (vesselHasRunnableScience()) {
+                warp.MinimumWarp();
+            } else {
+                warp.WarpAtRegularRate(autowarpRate);
+            }
+        }
+
         private void RunScience() {
             List<ModuleScienceExperiment> experiments = ExperimentList();
             if (experiments.Count == 0)
                 return;
             for(int i=0; i<experiments.Count; i++) {
                 ModuleScienceExperiment e = experiments[i];
-                if (ActiveContainer().HasData(newScienceData(e)))
-                    continue;
-                if (!surfaceSamplesUnlocked() && e.experiment.id == "surfaceSample")
-                    continue;
-                if (!e.rerunnable && !IsScientistOnBoard())
-                    continue;
-                if (!e.experiment.IsAvailableWhile(currentSituation(), mainBody))
-                    continue;
-                if (currentScienceValue(e) < 0.1)
+                if (!runnableExperiment(e))
                     continue;
                 ActiveContainer().AddData(newScienceData(e));
             }

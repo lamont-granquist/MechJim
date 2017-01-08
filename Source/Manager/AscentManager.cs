@@ -6,7 +6,7 @@ using UnityEngine;
 /* this is a stock launcher, not suitable for RSS/RO/RF */
 namespace MechJim.Manager {
 
-    [Enable(typeof(ThrottleManager), typeof(AttitudeManager), typeof(WarpManager))]
+    [Enable(typeof(ThrottleManager), typeof(AttitudeManager), typeof(WarpManager), typeof(AutoFairing))]
     public class AscentManager: ManagerBase {
         public bool done { get; set; }
         public double target_altitude { get; set; }
@@ -20,7 +20,6 @@ namespace MechJim.Manager {
         public PIDLoop throttlePID = new PIDLoop(.8, 0.15, 0.1);
 
         override protected void OnDisable() {
-            autofairing.Disable();
         }
 
         public enum ThrottleState {
@@ -81,8 +80,6 @@ namespace MechJim.Manager {
             /* update targetAPtime */
             double dV = mainBody.CircVelocityAtRadius(orbit.ApR) - orbit.SwappedVelocityAtApoapsis().magnitude;
             targetAPtime = BurnTime(dV/2);
-            if (orbit.ApA > target_altitude)  /* FIXME: very spammy enabling */
-                autofairing.Enable();
 
             ThrottleState lastThrottleState = throttleState;
             AttitudeState lastAttitudeState = attitudeState;

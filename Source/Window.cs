@@ -65,7 +65,7 @@ namespace MechJim {
                         new DialogGUIButton("NodeExecute", () => { core.node.enabled = !core.node.enabled; }, false),
                         })); */
             dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
-                        new DialogGUIButton("Mission", () => { core.GetManager<Mission>().Enable(); }, false),
+                        new DialogGUIButton("Mission", () => { core.GetManager<Mission>().Run(); }, false),
                         }));
             dialog.Add(new DialogGUIHorizontalLayout(new DialogGUIBase[] {
                         new DialogGUITextInput(Convert.ToString(core.GetManager<SteeringManager>().pitchRatePI.Kp), false, 10,

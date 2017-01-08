@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MechJim.Extensions;
 using UnityEngine;
 
+#if CLEANMEUP
 namespace MechJim.Manager {
     public class LaunchTestState {
         /* singleton */
@@ -138,3 +139,4 @@ namespace MechJim.Manager {
         }
     }
 }
+#endif
