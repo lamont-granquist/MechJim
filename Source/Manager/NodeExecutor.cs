@@ -53,19 +53,19 @@ namespace MechJim.Manager {
             if ( vesselState.time < ( BurnUT - 300 ) ) {
                 /* way before the burn */
                 if ( attitude.AngleFromTarget() < 1 && CheckAngularVelocity(ref checkOneStart))
-                    warp.WarpToUT(BurnUT - leadTime);
+                    warp.WarpToUT(this, BurnUT - leadTime);
             } else if ( vesselState.time < ( BurnUT - leadTime ) ) {
                 /* before the burn */
                 if ( attitude.AngleFromTarget() < 1 && CheckAngularVelocity(ref checkTwoStart))
-                    warp.WarpToUT(BurnUT - leadTime);
+                    warp.WarpToUT(this, BurnUT - leadTime);
                 if ( attitude.AngleFromTarget() > 5 )
-                    warp.MinimumWarp();
+                    warp.MinimumWarp(this);
             } else if ( vesselState.time < BurnUT ) {
                 /* settling time */
-                warp.MinimumWarp();
+                warp.MinimumWarp(this);
             } else {
                 /* feeling the burn */
-                warp.MinimumWarp();
+                warp.MinimumWarp(this);
                 throttle.target = 0.0;
 
                 if ( attitude.AngleFromTarget() > 5 ) {

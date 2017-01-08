@@ -6,7 +6,7 @@ using KSP.UI.Screens;
 
 namespace MechJim.Manager {
 
-    [Enable(typeof(AutoPanel), typeof(AutoChute), typeof(AutoScience), typeof(AutoStage))]
+    [Enable(typeof(AutoPanel), typeof(AutoChute), typeof(AutoScience), typeof(AutoStage), typeof(WarpManager))]
     public class Mission: ManagerBase {
         public delegate StateFn StateFn();
 
@@ -41,6 +41,7 @@ namespace MechJim.Manager {
             ascent.start_turn = 19.8115793679895;
             ascent.maxQlimit = 27.8286833352543;
             ascent.Register(this);
+            autostage.maxstage = 4;
             return WaitAscend;
         }
 
@@ -113,7 +114,7 @@ namespace MechJim.Manager {
 
         private StateFn DoneScience() {
             autoscience.AutoWarpRate(0);
-            warp.WarpToUT(coastEnd);
+            warp.WarpToUT(this, coastEnd);
             return WaitCoast;
         }
 
@@ -154,7 +155,7 @@ namespace MechJim.Manager {
         }
 
         private StateFn WarpToAtm() {
-            warp.WarpToAtmosphericEntry();
+            warp.WarpToAtmosphericEntry(this);
             return WaitForAtm;
         }
 
@@ -167,7 +168,7 @@ namespace MechJim.Manager {
 
         private StateFn WarpToGround() {
             attitude.attitudeTo(-Vector3d.forward, AttitudeReference.ORBIT);
-            warp.WarpAtPhysicsRate(4);
+            warp.WarpAtPhysicsRate(this, 4);
             return WaitForGround;
         }
 

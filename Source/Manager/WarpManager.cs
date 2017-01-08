@@ -23,15 +23,18 @@ namespace MechJim.Manager {
             }
         }
 
-        public void WarpToAtmosphericEntry() {
+        public void WarpToAtmosphericEntry(ManagerBase caller) {
             WarpToUT(
-                OrbitExtensions.TimeOfRadius(orbit, vesselState.time, mainBody.Radius + mainBody.RealMaxAtmosphereAltitude())
+                    caller, OrbitExtensions.TimeOfRadius(orbit, vesselState.time, mainBody.Radius + mainBody.RealMaxAtmosphereAltitude())
             );
         }
 
-        public void WarpToUT(double UT) {
-            Enable();
+        public void WarpToUT(ManagerBase caller, double UT) {
+            Register(caller);
+            WarpToUT(UT);
+        }
 
+        private void WarpToUT(double UT) {
             warpToUT = UT;
 
             if (!vessel.LandedOrSplashed && vessel.altitude > timewarp.GetAltitudeLimit(1, mainBody))
@@ -45,7 +48,9 @@ namespace MechJim.Manager {
             WarpAtRate(desiredRate);
         }
 
-        public void WarpAtRegularRate(double rate, bool instant = false) {
+        public void WarpAtRegularRate(ManagerBase caller, double rate, bool instant = false) {
+            Register(caller);
+
             warpToUT = -1;
 
             SetRegularMode();
@@ -53,7 +58,9 @@ namespace MechJim.Manager {
             WarpAtRate(rate, instant);
         }
 
-        public void WarpAtPhysicsRate(double rate, bool instant = false) {
+        public void WarpAtPhysicsRate(ManagerBase caller, double rate, bool instant = false) {
+            Register(caller);
+
             warpToUT = -1;
 
             SetPhysicsMode();
@@ -61,7 +68,12 @@ namespace MechJim.Manager {
             WarpAtRate(rate, instant);
         }
 
-        public void MinimumWarp(bool instant = true) {
+        public void MinimumWarp(ManagerBase caller, bool instant = true) {
+            Register(caller);
+            MinimumWarp(instant);
+        }
+
+        private void MinimumWarp(bool instant = true) {
             warpToUT = -1;
 
             WarpAtIndex(0, instant);

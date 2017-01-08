@@ -35,7 +35,7 @@ namespace MechJim.Manager {
 
         public void AutoWarpRate(double rate) {
             if (rate <= 1) {
-                warp.MinimumWarp();
+                warp.MinimumWarp(this);
             }
             autowarpRate = rate;
         }
@@ -96,9 +96,9 @@ namespace MechJim.Manager {
             if (autowarpRate <= 1)
                 return;
             if (vesselHasRunnableScience()) {
-                warp.MinimumWarp();
+                warp.MinimumWarp(this);
             } else {
-                warp.WarpAtRegularRate(autowarpRate);
+                warp.WarpAtRegularRate(this, autowarpRate);
             }
         }
 
